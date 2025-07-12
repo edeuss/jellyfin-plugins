@@ -9,7 +9,7 @@
     "versions": [
       {
         "version": "1.4.1",
-        "changelog": "Added per track vertical background support",
+        "changelog": "Removed some config options.",
         "targetAbi": "10.10.0.0",
         "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.4.1/Jellyfin.Plugin.Animated.Music_1.4.1.zip",
         "checksum": "dd5708aa7a3c7060369b3220649b1106",
