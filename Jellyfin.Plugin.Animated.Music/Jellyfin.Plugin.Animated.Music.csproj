@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.Animated.Music</RootNamespace>
-    <AssemblyVersion>1.3.0</AssemblyVersion>
-    <FileVersion>1.3.0</FileVersion>
+    <AssemblyVersion>1.4.0</AssemblyVersion>
+    <FileVersion>1.4.0</FileVersion>
     <Company>edeuss</Company>
     <Product>Jellyfin Animated Music Plugin</Product>
     <Description>Adds animated cover and vertical video background support for music albums through an API for clients.</Description>
