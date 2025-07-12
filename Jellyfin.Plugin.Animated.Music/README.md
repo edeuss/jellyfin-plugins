@@ -1,13 +1,11 @@
 # Jellyfin.Plugin.Animated.Music
 
-A Jellyfin plugin that adds support for animated covers and vertical video backgrounds for music albums through an API for clients to use.
+A Jellyfin plugin that adds support for animated covers and vertical video backgrounds for music albums through an REST API for clients to use.
 
 ## Features
 
 - **Animated Covers**: Support for animated GIF, MP4, WebM, MOV, and AVI files as album covers
 - **Vertical Backgrounds**: Support for vertical video backgrounds for music albums
-- **Configurable**: Customizable filename patterns and file size limits
-- **API Endpoints**: REST API endpoints to access animated files programmatically
 
 ## Installation
 
@@ -51,23 +49,6 @@ Music/
 
 - **Animated Covers**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
 - **Vertical Backgrounds**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
-
-### Configuration
-
-Access the plugin configuration through the Jellyfin dashboard:
-
-1. Go to **Dashboard** → **Plugins**
-2. Find **Animated Music** in the list
-3. Click **Configure**
-
-#### Configuration Options
-
-- **Enable Animated Covers**: Toggle animated cover support
-- **Enable Vertical Backgrounds**: Toggle vertical background support
-- **Animated Cover Filename Pattern**: Base filename for animated covers (default: `cover-animated`)
-- **Vertical Background Filename Pattern**: Base filename for vertical backgrounds (default: `vertical-background`)
-- **Maximum File Size (MB)**: Maximum allowed file size for animated files (default: 50MB)
-- **Supported Formats**: Comma-separated list of supported file extensions
 
 ## API Endpoints
 
@@ -149,10 +130,9 @@ curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-23
 
 ### Notes
 
-- All endpoints respect the plugin configuration settings
 - Files are served with appropriate MIME types (image/gif, video/mp4, etc.)
-- Album IDs must be valid GUIDs
-- Returns 404 if files are not found or features are disabled
+- Album/Track IDs must be valid GUIDs
+- Returns 404 if files are not found
 
 ## Troubleshooting
 

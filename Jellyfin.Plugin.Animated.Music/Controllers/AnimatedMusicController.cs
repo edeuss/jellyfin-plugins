@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
-using Jellyfin.Plugin.Animated.Music.Configuration;
 
 namespace Jellyfin.Plugin.Animated.Music.Controllers
 {
@@ -18,6 +17,9 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         private readonly ILogger<AnimatedMusicController> _logger;
         private readonly ILibraryManager _libraryManager;
 
+        // Hardcoded configuration values
+        private static readonly string[] SupportedAnimatedFormats = { ".gif", ".mp4", ".webm", ".mov", ".avi" };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimatedMusicController"/> class.
         /// </summary>
@@ -27,19 +29,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             _logger = logger;
             _libraryManager = libraryManager;
-        }
-
-        private PluginConfiguration GetConfiguration()
-        {
-            try
-            {
-                return Plugin.Instance?.Configuration ?? new PluginConfiguration();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to get plugin configuration, using defaults");
-                return new PluginConfiguration();
-            }
         }
 
         /// <summary>
@@ -52,20 +41,13 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             try
             {
-                var configuration = GetConfiguration();
-                
-                if (!configuration.EnableAnimatedCovers)
-                {
-                    return NotFound("Animated covers are disabled");
-                }
-
                 var albumPath = GetAlbumPath(albumId);
                 if (string.IsNullOrEmpty(albumPath))
                 {
                     return NotFound("Album not found");
                 }
 
-                var animatedCoverPath = FindAnimatedFile(albumPath, configuration.AnimatedCoverFileName, configuration);
+                var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
                 if (string.IsNullOrEmpty(animatedCoverPath))
                 {
                     return NotFound("Animated cover not found");
@@ -101,20 +83,13 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             try
             {
-                var configuration = GetConfiguration();
-                
-                if (!configuration.EnableVerticalBackgrounds)
-                {
-                    return NotFound("Vertical backgrounds are disabled");
-                }
-
                 var albumPath = GetAlbumPath(albumId);
                 if (string.IsNullOrEmpty(albumPath))
                 {
                     return NotFound("Album not found");
                 }
 
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background", configuration);
+                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
                 if (string.IsNullOrEmpty(verticalBackgroundPath))
                 {
                     return NotFound("Vertical background not found");
@@ -150,12 +125,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             try
             {
-                var configuration = GetConfiguration();
-                
-                if (!configuration.EnableVerticalBackgrounds)
-                {
-                    return NotFound("Vertical backgrounds are disabled");
-                }
                 var trackInfo = GetTrackInfo(trackId);
                 if (trackInfo == (string.Empty, string.Empty))
                 {
@@ -165,7 +134,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
                 
-                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern, configuration);
+                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern);
                 if (string.IsNullOrEmpty(verticalBackgroundPath))
                 {
                     return NotFound("Track vertical background not found");
@@ -201,22 +170,20 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             try
             {
-                var configuration = GetConfiguration();
-                
                 var albumPath = GetAlbumPath(albumId);
                 if (string.IsNullOrEmpty(albumPath))
                 {
                     return NotFound("Album not found");
                 }
 
-                var animatedCoverPath = FindAnimatedFile(albumPath, configuration.AnimatedCoverFileName, configuration);
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background", configuration);
+                var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
+                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
 
                 var info = new
                 {
                     AlbumId = albumId,
-                    HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath) && configuration.EnableAnimatedCovers,
-                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath) && configuration.EnableVerticalBackgrounds,
+                    HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
+                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
                     AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCover" : null,
                     VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Album/{albumId}/VerticalBackground" : null
                 };
@@ -240,7 +207,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             try
             {
-                var configuration = GetConfiguration();
                 var trackInfo = GetTrackInfo(trackId);
                 if (trackInfo == (string.Empty, string.Empty))
                 {
@@ -249,13 +215,13 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
-                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern, configuration);
+                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern);
 
                 var info = new
                 {
                     TrackId = trackId,
                     TrackFileName = trackFileName,
-                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath) && configuration.EnableVerticalBackgrounds,
+                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
                     VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Track/{trackId}/VerticalBackground" : null
                 };
 
@@ -319,14 +285,13 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             }
         }
 
-        private string FindAnimatedFile(string albumPath, string fileNamePattern, PluginConfiguration configuration)
+        private string FindAnimatedFile(string albumPath, string fileNamePattern)
         {
             if (string.IsNullOrEmpty(albumPath) || !Directory.Exists(albumPath))
             {
                 return null;
             }
 
-            var maxFileSizeBytes = configuration.MaxFileSizeMB * 1024 * 1024;
 
             try
             {
@@ -338,8 +303,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                         var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
                         
                         if (nameWithoutExtension.Equals(fileNamePattern, StringComparison.OrdinalIgnoreCase) &&
-                            IsAnimatedFile(fileInfo.Name, configuration) &&
-                            fileInfo.Length <= maxFileSizeBytes)
+                            IsAnimatedFile(fileInfo.Name))
                         {
                             return file;
                         }
@@ -359,9 +323,9 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             return null;
         }
 
-        private bool IsAnimatedFile(string fileName, PluginConfiguration configuration)
+        private bool IsAnimatedFile(string fileName)
         {
-            if (string.IsNullOrEmpty(fileName) || configuration.SupportedAnimatedFormats == null || configuration.SupportedAnimatedFormats.Length == 0)
+            if (string.IsNullOrEmpty(fileName))
             {
                 return false;
             }
@@ -369,7 +333,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             try
             {
                 var extension = Path.GetExtension(fileName).ToLowerInvariant();
-                return Array.Exists(configuration.SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
+                return Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
             }
             catch (Exception ex)
             {

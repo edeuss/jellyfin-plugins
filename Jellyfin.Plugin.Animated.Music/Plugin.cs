@@ -4,14 +4,13 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
-using Jellyfin.Plugin.Animated.Music.Configuration;
 
 namespace Jellyfin.Plugin.Animated.Music
 {
     /// <summary>
     /// Main plugin class for Jellyfin.Plugin.Animated.Music.
     /// </summary>
-    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+    public class Plugin : BasePlugin
     {
         /// <summary>
         /// Gets the plugin instance.
@@ -22,9 +21,8 @@ namespace Jellyfin.Plugin.Animated.Music
         /// Initializes a new instance of the <see cref="Plugin"/> class.
         /// </summary>
         /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
-        /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
-            : base(applicationPaths, xmlSerializer)
+        public Plugin(IApplicationPaths applicationPaths)
+            : base()
         {
             Instance = this;
         }
@@ -37,18 +35,5 @@ namespace Jellyfin.Plugin.Animated.Music
 
         /// <inheritdoc />
         public override string Description => "Adds animated cover and vertical video background support for music albums";
-
-        /// <inheritdoc />
-        public IEnumerable<PluginPageInfo> GetPages()
-        {
-            return new[]
-            {
-                new PluginPageInfo
-                {
-                    Name = "Animated Music",
-                    EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
-                }
-            };
-        }
     }
 } 
