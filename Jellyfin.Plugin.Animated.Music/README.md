@@ -21,6 +21,21 @@ A Jellyfin plugin that adds support for animated covers and vertical video backg
 3. Copy the built .zip to your Jellyfin plugins directory
 4. Restart Jellyfin Server
 
+### From Catalog page
+
+1. Navigate to the dashboard plugins catalog page.
+2. Click on the gear icon.
+3. Click on the + (plus) icon.
+4. Add this Repository URL
+
+   ```text
+   https://raw.githubusercontent.com/edeuss/jellyfin-plugins/refs/heads/main/manifest.json
+   ```
+
+5. Navigate back to the catalog page.
+6. Find "Animated Music"
+7. Install
+
 ## Usage
 
 ### File Structure
