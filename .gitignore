@@ -1,0 +1,32 @@
+# Build outputs
+**/bin/
+**/obj/
+**/build/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.dll.config
+
+# JetBrains Rider
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Plugin specific
+Jellyfin.Plugin.Animated.Music/bin/
+Jellyfin.Plugin.Animated.Music/obj/
