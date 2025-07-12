@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.2.4",
+        "changelog": "Fix startup issue on 10.10.7",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.4/Jellyfin.Plugin.Animated.Music_1.2.4.zip",
+        "checksum": "0425f063584537996658b8cb8f08ac03",
+        "timestamp": "2025-07-12T00:00:00.0000000Z"
+      },
+      {
         "version": "1.2.3",
         "changelog": "Updated NET version",
         "targetAbi": "10.10.0.0",
