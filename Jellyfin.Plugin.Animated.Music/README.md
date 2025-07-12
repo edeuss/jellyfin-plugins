@@ -17,9 +17,11 @@ A Jellyfin plugin that adds support for animated covers and vertical video backg
 
 1. Clone this repository
 2. Build the project using .NET 8.0:
+
    ```bash
    dotnet build --configuration Release
    ```
+
 3. Copy the built files to your Jellyfin plugins directory
 4. Restart Jellyfin Server
 
@@ -71,44 +73,55 @@ Access the plugin configuration through the Jellyfin dashboard:
 The plugin provides REST API endpoints to access animated files programmatically:
 
 ### Get Animated Cover
+
 ```
 GET /AnimatedMusic/Album/{albumId}/AnimatedCover
 ```
+
 Returns the animated cover file for the specified album.
 
 ### Get Vertical Background
+
 ```
 GET /AnimatedMusic/Album/{albumId}/VerticalBackground
 ```
+
 Returns the vertical background file for the specified album.
 
 ### Get Animated Info
+
 ```
 GET /AnimatedMusic/Album/{albumId}/Info
 ```
+
 Returns information about available animated files for the album, including:
+
 - Whether animated cover and background are available
 - Direct URLs to access the files
 - Album information
 
 ### Example Usage
 
-#### Get animated cover:
+#### Get animated cover
+
 ```bash
 curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover"
 ```
 
-#### Get vertical background:
+#### Get vertical background
+
 ```bash
 curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
 ```
 
-#### Get info about available files:
+#### Get info about available files
+
 ```bash
 curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/Info"
 ```
 
-#### Example Response (Info endpoint):
+#### Example Response (Info endpoint)
+
 ```json
 {
   "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
