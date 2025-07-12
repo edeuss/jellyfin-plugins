@@ -56,7 +56,7 @@ The plugin provides REST API endpoints to access animated files programmatically
 
 ### Get Album Animated Cover
 
-```
+```text
 GET /AnimatedMusic/Album/{albumId}/AnimatedCover
 ```
 
@@ -64,7 +64,7 @@ Returns the animated cover file for the specified album.
 
 ### Get Album Vertical Background
 
-```
+```text
 GET /AnimatedMusic/Album/{albumId}/VerticalBackground
 ```
 
@@ -72,19 +72,23 @@ Returns the vertical background file for the specified album.
 
 ### Get Album Animated Info
 
-```
+```text
 GET /AnimatedMusic/Album/{albumId}/Info
 ```
 
-Returns information about available animated files for the album, including:
-
-- Whether animated cover and background are available
-- Direct URLs to access the files
-- Album information
+```json
+{
+  "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
+  "hasAnimatedCover": true,
+  "hasVerticalBackground": true,
+  "animatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
+  "verticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
+}
+```
 
 ### Get Track Vertical Background
 
-```
+```text
 GET /AnimatedMusic/Track/{trackId}/VerticalBackground
 ```
 
@@ -92,7 +96,7 @@ Returns the vertical background file for the specified track.
 
 ### Get Track Animated Info
 
-```
+```text
 GET /AnimatedMusic/Track/{trackId}/Info
 ```
 
@@ -114,18 +118,6 @@ curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-23
 
 ```bash
 curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/Info"
-```
-
-#### Example Response (Album Info endpoint)
-
-```json
-{
-  "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
-  "hasAnimatedCover": true,
-  "hasVerticalBackground": true,
-  "animatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
-  "verticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
-}
 ```
 
 ### Notes
