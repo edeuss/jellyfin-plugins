@@ -107,32 +107,10 @@ GET /AnimatedMusic/Album/{albumId}/Info
 GET /AnimatedMusic/Track/{trackId}/VerticalBackground
 ```
 
-Returns the vertical background file for the specified track.
-
 ### Get Track Animated Info
 
 ```text
 GET /AnimatedMusic/Track/{trackId}/Info
-```
-
-### Example Usage
-
-#### Get animated cover
-
-```bash
-curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover"
-```
-
-#### Get vertical background
-
-```bash
-curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
-```
-
-#### Get info about available files
-
-```bash
-curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/Info"
 ```
 
 ### Notes
