@@ -114,7 +114,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                     return NotFound("Album not found");
                 }
 
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, configuration.VerticalBackgroundFileName, configuration);
+                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background", configuration);
                 if (string.IsNullOrEmpty(verticalBackgroundPath))
                 {
                     return NotFound("Vertical background not found");
@@ -141,6 +141,57 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         }
 
         /// <summary>
+        /// Gets the vertical background for a music track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The vertical background file.</returns>
+        [HttpGet("Track/{trackId}/VerticalBackground")]
+        public IActionResult GetTrackVerticalBackground(string trackId)
+        {
+            try
+            {
+                var configuration = GetConfiguration();
+                
+                if (!configuration.EnableVerticalBackgrounds)
+                {
+                    return NotFound("Vertical backgrounds are disabled");
+                }
+                var trackInfo = GetTrackInfo(trackId);
+                if (trackInfo == (string.Empty, string.Empty))
+                {
+                    return NotFound("Track not found");
+                }
+
+                var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
+                var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
+                
+                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern, configuration);
+                if (string.IsNullOrEmpty(verticalBackgroundPath))
+                {
+                    return NotFound("Track vertical background not found");
+                }
+
+                var fileInfo = new FileInfo(verticalBackgroundPath);
+                if (!fileInfo.Exists)
+                {
+                    return NotFound("Track vertical background file not found");
+                }
+
+                var contentType = GetContentType(fileInfo.Extension);
+                var stream = System.IO.File.OpenRead(verticalBackgroundPath);
+
+                _logger.LogDebug("Serving track vertical background for track {TrackId}: {FilePath}", trackId, verticalBackgroundPath);
+
+                return File(stream, contentType, fileInfo.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error serving track vertical background for track {TrackId}", trackId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
         /// Gets information about animated files for a music album.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
@@ -159,7 +210,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 }
 
                 var animatedCoverPath = FindAnimatedFile(albumPath, configuration.AnimatedCoverFileName, configuration);
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, configuration.VerticalBackgroundFileName, configuration);
+                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background", configuration);
 
                 var info = new
                 {
@@ -175,6 +226,44 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting animated info for album {AlbumId}", albumId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Gets information about animated files for a music track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>Information about available animated files.</returns>
+        [HttpGet("Track/{trackId}/Info")]
+        public IActionResult GetTrackAnimatedInfo(string trackId)
+        {
+            try
+            {
+                var configuration = GetConfiguration();
+                var trackInfo = GetTrackInfo(trackId);
+                if (trackInfo == (string.Empty, string.Empty))
+                {
+                    return NotFound("Track not found");
+                }
+
+                var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
+                var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
+                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern, configuration);
+
+                var info = new
+                {
+                    TrackId = trackId,
+                    TrackFileName = trackFileName,
+                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath) && configuration.EnableVerticalBackgrounds,
+                    VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Track/{trackId}/VerticalBackground" : null
+                };
+
+                return Ok(info);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting track animated info for track {TrackId}", trackId);
                 return StatusCode(500, "Internal server error");
             }
         }
@@ -200,6 +289,33 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             {
                 _logger.LogError(ex, "Error getting album path for ID {AlbumId}", albumId);
                 return null;
+            }
+        }
+
+        private (string FolderPath, string FileName) GetTrackInfo(string trackId)
+        {
+            try
+            {
+                if (!Guid.TryParse(trackId, out var guid))
+                {
+                    return (null, null);
+                }
+
+                var item = _libraryManager.GetItemById(guid);
+                if (item is not Audio track)
+                {
+                    return (null, null);
+                }
+
+                var folderPath = Path.GetDirectoryName(track.Path);
+                var fileName = Path.GetFileName(track.Path);
+
+                return (folderPath, fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting track info for ID {TrackId}", trackId);
+                return (null, null);
             }
         }
 

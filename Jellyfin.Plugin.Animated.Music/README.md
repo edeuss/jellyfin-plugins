@@ -35,13 +35,16 @@ Music/
 │   ├── Album Name/
 │   │   ├── 01 - Track 1.mp3
 │   │   ├── 02 - Track 2.mp3
-│   │   ├── cover-animated.gif          # Animated cover
-│   │   ├── vertical-background.mp4     # Vertical background
+│   │   ├── cover-animated.gif                      # Animated cover
+│   │   ├── vertical-background.mp4                 # Album vertical background
+│   │   ├── vertical-background-01 - Track 1.mp4    # Track-specific vertical background
+│   │   ├── vertical-background-02 - Track 2.webm   # Track-specific vertical background
 │   │   └── cover.jpg                   
 │   └── Another Album/
 │       ├── 01 - Track 1.mp3
-│       ├── cover-animated.webm         # Different format
-│       └── vertical-background.mov     # Different format
+│       ├── cover-animated.webm                     # Different format
+│       ├── vertical-background.mov                 # Album vertical background
+│       └── vertical-background-01 - Track 1.mov    # Track-specific vertical background
 ```
 
 ### Supported File Formats
@@ -70,7 +73,7 @@ Access the plugin configuration through the Jellyfin dashboard:
 
 The plugin provides REST API endpoints to access animated files programmatically:
 
-### Get Animated Cover
+### Get Album Animated Cover
 
 ```
 GET /AnimatedMusic/Album/{albumId}/AnimatedCover
@@ -78,7 +81,7 @@ GET /AnimatedMusic/Album/{albumId}/AnimatedCover
 
 Returns the animated cover file for the specified album.
 
-### Get Vertical Background
+### Get Album Vertical Background
 
 ```
 GET /AnimatedMusic/Album/{albumId}/VerticalBackground
@@ -86,7 +89,7 @@ GET /AnimatedMusic/Album/{albumId}/VerticalBackground
 
 Returns the vertical background file for the specified album.
 
-### Get Animated Info
+### Get Album Animated Info
 
 ```
 GET /AnimatedMusic/Album/{albumId}/Info
@@ -97,6 +100,20 @@ Returns information about available animated files for the album, including:
 - Whether animated cover and background are available
 - Direct URLs to access the files
 - Album information
+
+### Get Track Vertical Background
+
+```
+GET /AnimatedMusic/Track/{trackId}/VerticalBackground
+```
+
+Returns the vertical background file for the specified track.
+
+### Get Track Animated Info
+
+```
+GET /AnimatedMusic/Track/{trackId}/Info
+```
 
 ### Example Usage
 
