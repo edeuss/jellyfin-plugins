@@ -1,6 +1,6 @@
 # Jellyfin.Plugin.Animated.Music
 
-A Jellyfin plugin that adds support for animated covers and vertical video backgrounds for music albums.
+A Jellyfin plugin that adds support for animated covers and vertical video backgrounds for music albums through an API for clients to use.
 
 ## Features
 
