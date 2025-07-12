@@ -56,6 +56,10 @@ cd ..
 echo "Build completed successfully!"
 echo "Plugin files are available in the 'build' directory."
 echo "Plugin package: $ZIP_NAME"
+
+# Calculate and display MD5 checksum
+echo "MD5 checksum: $(md5 -q "$ZIP_NAME")"
+
 echo ""
 echo "To install the plugin:"
 echo "1. Copy the contents of the 'build' directory to your Jellyfin plugins folder"
