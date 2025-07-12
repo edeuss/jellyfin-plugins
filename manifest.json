@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.2.0",
+        "changelog": "Added support showing on Album details page",
+        "targetAbi": "10.8.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.0/Jellyfin.Plugin.Animated.Music_1.2.0.zip",
+        "checksum": "b5489063594132be60d5c439a23b84e3",
+        "timestamp": "2025-07-12T00:00:00.0000000Z"
+      },
+      {
         "version": "1.1.0",
         "changelog": "Added support for exposing the info to the API",
         "targetAbi": "10.8.0.0",
