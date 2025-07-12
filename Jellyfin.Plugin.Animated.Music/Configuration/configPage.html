@@ -141,11 +141,11 @@
             type="text"
             id="animatedCoverFileName"
             name="animatedCoverFileName"
-            placeholder="animated-cover"
+            placeholder="cover-animated"
           />
           <div class="help-text">
-            Base filename to look for animated covers (e.g., "animated-cover"
-            will match "animated-cover.gif", "animated-cover.mp4", etc.)
+            Base filename to look for animated covers (e.g., "cover-animated"
+            will match "cover-animated.gif", "cover-animated.mp4", etc.)
           </div>
         </div>
 
@@ -205,6 +205,8 @@
     </div>
 
     <script>
+      const pluginId = "d5861930-8da6-499c-b7dd-235c60703f64";
+
       // Load configuration on page load
       document.addEventListener("DOMContentLoaded", function () {
         loadConfiguration();
@@ -219,23 +221,25 @@
         });
 
       function loadConfiguration() {
-        fetch("/Plugins/AnimatedMusic/Configuration")
+        fetch(`/Plugins/${pluginId}/Configuration`)
           .then((response) => response.json())
           .then((config) => {
             document.getElementById("enableAnimatedCovers").checked =
-              config.enableAnimatedCovers;
+              config.EnableAnimatedCovers;
             document.getElementById("enableVerticalBackgrounds").checked =
-              config.enableVerticalBackgrounds;
+              config.EnableVerticalBackgrounds;
             document.getElementById("animatedCoverFileName").value =
-              config.animatedCoverFileName;
+              config.AnimatedCoverFileName || "";
             document.getElementById("verticalBackgroundFileName").value =
-              config.verticalBackgroundFileName;
+              config.VerticalBackgroundFileName || "";
             document.getElementById("maxFileSizeMB").value =
-              config.maxFileSizeMB;
-            document.getElementById("supportedFormats").value =
-              config.supportedAnimatedFormats.join(",");
+              config.MaxFileSizeMB || 50;
+            document.getElementById("supportedFormats").value = (
+              config.SupportedAnimatedFormats || []
+            ).join(",");
           })
           .catch((error) => {
+            console.error("Error loading configuration:", error);
             showStatus(
               "Error loading configuration: " + error.message,
               "error"
@@ -249,27 +253,27 @@
         saveButton.textContent = "Saving...";
 
         const config = {
-          enableAnimatedCovers: document.getElementById("enableAnimatedCovers")
+          EnableAnimatedCovers: document.getElementById("enableAnimatedCovers")
             .checked,
-          enableVerticalBackgrounds: document.getElementById(
+          EnableVerticalBackgrounds: document.getElementById(
             "enableVerticalBackgrounds"
           ).checked,
-          animatedCoverFileName: document.getElementById(
+          AnimatedCoverFileName: document.getElementById(
             "animatedCoverFileName"
           ).value,
-          verticalBackgroundFileName: document.getElementById(
+          VerticalBackgroundFileName: document.getElementById(
             "verticalBackgroundFileName"
           ).value,
-          maxFileSizeMB:
+          MaxFileSizeMB:
             parseInt(document.getElementById("maxFileSizeMB").value) || 50,
-          supportedAnimatedFormats: document
+          SupportedAnimatedFormats: document
             .getElementById("supportedFormats")
             .value.split(",")
-            .map((f) => f.trim())
-            .filter((f) => f),
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0),
         };
 
-        fetch("/Plugins/AnimatedMusic/Configuration", {
+        fetch(`/Plugins/${pluginId}/Configuration`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -278,14 +282,13 @@
         })
           .then((response) => {
             if (response.ok) {
-              return response.json();
+              showStatus("Configuration saved successfully!", "success");
+            } else {
+              throw new Error("Failed to save configuration");
             }
-            throw new Error("Failed to save configuration");
-          })
-          .then(() => {
-            showStatus("Configuration saved successfully!", "success");
           })
           .catch((error) => {
+            console.error("Error saving configuration:", error);
             showStatus("Error saving configuration: " + error.message, "error");
           })
           .finally(() => {
@@ -302,7 +305,7 @@
 
         setTimeout(() => {
           status.style.display = "none";
-        }, 5000);
+        }, 3000);
       }
     </script>
   </body>
