@@ -30,3 +30,12 @@ ehthumbs.db
 # Plugin specific
 Jellyfin.Plugin.Animated.Music/bin/
 Jellyfin.Plugin.Animated.Music/obj/
+
+# Build artifacts
+build/
+*.zip
+
+# macOS metadata files
+.DS_Store
+._*
+__MACOSX/
