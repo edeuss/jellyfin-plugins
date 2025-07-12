@@ -12,7 +12,7 @@
         "changelog": "Initial release with support for animated covers and vertical backgrounds",
         "targetAbi": "10.8.0.0",
         "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.0.0/Jellyfin.Plugin.Animated.Music_1.0.0.zip",
-        "checksum": "4E02572733F49D627ACB13480B15310F",
+        "checksum": "9cce5e6ee7b0138945e89c44f6dc2635",
         "timestamp": "2025-07-12T00:00:00.0000000Z"
       }
     ]
