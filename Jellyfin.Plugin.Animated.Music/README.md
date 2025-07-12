@@ -7,9 +7,7 @@ A Jellyfin plugin that adds support for animated covers and vertical video backg
 - **Animated Covers**: Support for animated GIF, MP4, WebM, MOV, and AVI files as album covers
 - **Vertical Backgrounds**: Support for vertical video backgrounds for music albums
 - **Configurable**: Customizable filename patterns and file size limits
-- **Web Interface**: Easy-to-use configuration page in the Jellyfin dashboard
 - **API Endpoints**: REST API endpoints to access animated files programmatically
-- **Web Interface Integration**: Automatic display of animated covers on album details pages
 
 ## Installation
 
