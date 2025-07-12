@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Serialization;
 using Jellyfin.Plugin.Animated.Music.Configuration;
 
 namespace Jellyfin.Plugin.Animated.Music
@@ -10,14 +11,20 @@ namespace Jellyfin.Plugin.Animated.Music
     /// <summary>
     /// Main plugin class for Jellyfin.Plugin.Animated.Music.
     /// </summary>
-    public class Plugin : BasePlugin
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        public static Plugin Instance { get; private set; }
+        /// <summary>
+        /// Gets the plugin instance.
+        /// </summary>
+        public static Plugin Instance { get; private set; } = null!;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Plugin"/> class.
         /// </summary>
-        public Plugin()
+        /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
+        /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+            : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
         }
@@ -32,6 +39,16 @@ namespace Jellyfin.Plugin.Animated.Music
         public override string Description => "Adds animated cover and vertical video background support for music albums";
 
         /// <inheritdoc />
-        public new string Version => "1.2.8";
+        public IEnumerable<PluginPageInfo> GetPages()
+        {
+            return new[]
+            {
+                new PluginPageInfo
+                {
+                    Name = "Animated Music",
+                    EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
+                }
+            };
+        }
     }
 } 
