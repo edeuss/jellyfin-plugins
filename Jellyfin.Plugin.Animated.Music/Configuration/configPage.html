@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Animated Music Plugin Configuration</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #1a1a1a;
+        color: #ffffff;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #2a2a2a;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        color: #00a4dc;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 25px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #e0e0e0;
+      }
+      input[type="text"],
+      input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background-color: #333;
+        color: #ffffff;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      input[type="checkbox"] {
+        margin-right: 10px;
+        transform: scale(1.2);
+      }
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .save-button {
+        background-color: #00a4dc;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        margin-top: 20px;
+        width: 100%;
+      }
+      .save-button:hover {
+        background-color: #0088b3;
+      }
+      .save-button:disabled {
+        background-color: #666;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+        text-align: center;
+        display: none;
+      }
+      .status.success {
+        background-color: #4caf50;
+        color: white;
+      }
+      .status.error {
+        background-color: #f44336;
+        color: white;
+      }
+      .help-text {
+        font-size: 12px;
+        color: #888;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Animated Music Plugin Configuration</h1>
+
+      <form id="configForm">
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="enableAnimatedCovers"
+              name="enableAnimatedCovers"
+            />
+            <label for="enableAnimatedCovers">Enable Animated Covers</label>
+          </div>
+          <div class="help-text">
+            Allow animated cover files (GIF, MP4, etc.) for music albums
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="enableVerticalBackgrounds"
+              name="enableVerticalBackgrounds"
+            />
+            <label for="enableVerticalBackgrounds"
+              >Enable Vertical Backgrounds</label
+            >
+          </div>
+          <div class="help-text">
+            Allow vertical video background files for music albums
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="animatedCoverFileName"
+            >Animated Cover Filename Pattern:</label
+          >
+          <input
+            type="text"
+            id="animatedCoverFileName"
+            name="animatedCoverFileName"
+            placeholder="animated-cover"
+          />
+          <div class="help-text">
+            Base filename to look for animated covers (e.g., "animated-cover"
+            will match "animated-cover.gif", "animated-cover.mp4", etc.)
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="verticalBackgroundFileName"
+            >Vertical Background Filename Pattern:</label
+          >
+          <input
+            type="text"
+            id="verticalBackgroundFileName"
+            name="verticalBackgroundFileName"
+            placeholder="vertical-background"
+          />
+          <div class="help-text">
+            Base filename to look for vertical backgrounds (e.g.,
+            "vertical-background" will match "vertical-background.gif",
+            "vertical-background.mp4", etc.)
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="maxFileSizeMB">Maximum File Size (MB):</label>
+          <input
+            type="number"
+            id="maxFileSizeMB"
+            name="maxFileSizeMB"
+            min="1"
+            max="500"
+            placeholder="50"
+          />
+          <div class="help-text">
+            Maximum allowed file size for animated files in megabytes
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="supportedFormats"
+            >Supported Formats (comma-separated):</label
+          >
+          <input
+            type="text"
+            id="supportedFormats"
+            name="supportedFormats"
+            placeholder=".gif,.mp4,.webm,.mov,.avi"
+          />
+          <div class="help-text">
+            File extensions that are considered animated files
+          </div>
+        </div>
+
+        <button type="submit" class="save-button" id="saveButton">
+          Save Configuration
+        </button>
+      </form>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <script>
+      // Load configuration on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        loadConfiguration();
+      });
+
+      // Handle form submission
+      document
+        .getElementById("configForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          saveConfiguration();
+        });
+
+      function loadConfiguration() {
+        fetch("/Plugins/AnimatedMusic/Configuration")
+          .then((response) => response.json())
+          .then((config) => {
+            document.getElementById("enableAnimatedCovers").checked =
+              config.enableAnimatedCovers;
+            document.getElementById("enableVerticalBackgrounds").checked =
+              config.enableVerticalBackgrounds;
+            document.getElementById("animatedCoverFileName").value =
+              config.animatedCoverFileName;
+            document.getElementById("verticalBackgroundFileName").value =
+              config.verticalBackgroundFileName;
+            document.getElementById("maxFileSizeMB").value =
+              config.maxFileSizeMB;
+            document.getElementById("supportedFormats").value =
+              config.supportedAnimatedFormats.join(",");
+          })
+          .catch((error) => {
+            showStatus(
+              "Error loading configuration: " + error.message,
+              "error"
+            );
+          });
+      }
+
+      function saveConfiguration() {
+        const saveButton = document.getElementById("saveButton");
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
+
+        const config = {
+          enableAnimatedCovers: document.getElementById("enableAnimatedCovers")
+            .checked,
+          enableVerticalBackgrounds: document.getElementById(
+            "enableVerticalBackgrounds"
+          ).checked,
+          animatedCoverFileName: document.getElementById(
+            "animatedCoverFileName"
+          ).value,
+          verticalBackgroundFileName: document.getElementById(
+            "verticalBackgroundFileName"
+          ).value,
+          maxFileSizeMB:
+            parseInt(document.getElementById("maxFileSizeMB").value) || 50,
+          supportedAnimatedFormats: document
+            .getElementById("supportedFormats")
+            .value.split(",")
+            .map((f) => f.trim())
+            .filter((f) => f),
+        };
+
+        fetch("/Plugins/AnimatedMusic/Configuration", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(config),
+        })
+          .then((response) => {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error("Failed to save configuration");
+          })
+          .then(() => {
+            showStatus("Configuration saved successfully!", "success");
+          })
+          .catch((error) => {
+            showStatus("Error saving configuration: " + error.message, "error");
+          })
+          .finally(() => {
+            saveButton.disabled = false;
+            saveButton.textContent = "Save Configuration";
+          });
+      }
+
+      function showStatus(message, type) {
+        const status = document.getElementById("status");
+        status.textContent = message;
+        status.className = "status " + type;
+        status.style.display = "block";
+
+        setTimeout(() => {
+          status.style.display = "none";
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>
