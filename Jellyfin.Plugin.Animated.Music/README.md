@@ -17,10 +17,10 @@ A Jellyfin plugin that adds support for animated covers and vertical video backg
 2. Build the project using .NET 8.0:
 
    ```bash
-   dotnet build --configuration Release
+   sh build.sh
    ```
 
-3. Copy the built files to your Jellyfin plugins directory
+3. Copy the built .zip to your Jellyfin plugins directory
 4. Restart Jellyfin Server
 
 ## Usage
@@ -135,7 +135,7 @@ curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-23
 curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/Info"
 ```
 
-#### Example Response (Info endpoint)
+#### Example Response (Album Info endpoint)
 
 ```json
 {
@@ -153,19 +153,6 @@ curl "http://your-jellyfin-server/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-23
 - Files are served with appropriate MIME types (image/gif, video/mp4, etc.)
 - Album IDs must be valid GUIDs
 - Returns 404 if files are not found or features are disabled
-
-### Building
-
-```bash
-# Restore dependencies
-dotnet restore
-
-# Build in Release mode
-dotnet build --configuration Release
-
-# Run tests (if any)
-dotnet test
-```
 
 ## Troubleshooting
 
