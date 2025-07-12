@@ -2,114 +2,18 @@
   {
     "guid": "d5861930-8da6-499c-b7dd-235c60703f64",
     "name": "Animated Music",
-    "description": "Adds animated cover and vertical video background support for music albums",
-    "overview": "This plugin allows you to use animated GIF, MP4, WebM, MOV, and AVI files as album covers and vertical video backgrounds for your music library. Supports configurable filename patterns and file size limits.",
+    "description": "Adds animated cover and vertical video background support for music albums through an API for clients.",
+    "overview": "This plugin allows you to use animated GIF, MP4, WebM, MOV, and AVI files as album covers and vertical video backgrounds for your music library in supported clients. Supports configurable filename patterns and file size limits.",
     "owner": "edeuss",
     "category": "Metadata",
     "versions": [
       {
-        "version": "1.2.10",
-        "changelog": "Fix configuration page issues",
+        "version": "1.3.0",
+        "changelog": "Changed to API only access",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.10/Jellyfin.Plugin.Animated.Music_1.2.10.zip",
-        "checksum": "47062eb65adb8ced6e9abcc6f4f2a452",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.3.0/Jellyfin.Plugin.Animated.Music_1.3.0.zip",
+        "checksum": "646cc32090ddc3ace2a63b3863a51d82",
         "timestamp": "2025-07-12T04:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.9",
-        "changelog": "Fix for NullReferenceException",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.9/Jellyfin.Plugin.Animated.Music_1.2.9.zip",
-        "checksum": "d045cb65649df711f27c3b0d9c6821dd",
-        "timestamp": "2025-07-12T03:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.8",
-        "changelog": "Code cleanup",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.8/Jellyfin.Plugin.Animated.Music_1.2.8.zip",
-        "checksum": "4261a6b28c5a90de9059716307286b71",
-        "timestamp": "2025-07-12T01:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.7",
-        "changelog": "Remove logger",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.7/Jellyfin.Plugin.Animated.Music_1.2.7.zip",
-        "checksum": "76c463b49f920c3e5d3351ff379a3728",
-        "timestamp": "2025-07-12T01:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.6",
-        "changelog": "Added proper dependency injection",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.6/Jellyfin.Plugin.Animated.Music_1.2.6.zip",
-        "checksum": "bb63d0c068460cc550ae78e64fadbad0",
-        "timestamp": "2025-07-12T01:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.5",
-        "changelog": "Fix build issues",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.5/Jellyfin.Plugin.Animated.Music_1.2.5.zip",
-        "checksum": "75804324cee4a2116dae28b698493a36",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.4",
-        "changelog": "Fix startup issue on 10.10.7",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.4/Jellyfin.Plugin.Animated.Music_1.2.4.zip",
-        "checksum": "0425f063584537996658b8cb8f08ac03",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.3",
-        "changelog": "Updated NET version",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.3/Jellyfin.Plugin.Animated.Music_1.2.3.zip",
-        "checksum": "b95222db57f3559738b8a6fcc35e073e",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.2",
-        "changelog": "Fixed dependency injection issue",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.2/Jellyfin.Plugin.Animated.Music_1.2.2.zip",
-        "checksum": "da8f70abc8ec2e28a67d54be4af4ac74",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.1",
-        "changelog": "Fixed package startup issue",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.1/Jellyfin.Plugin.Animated.Music_1.2.1.zip",
-        "checksum": "e7456bb0a2b1b6c26044ba67a016b278",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.2.0",
-        "changelog": "Added support showing on Album details page",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.2.0/Jellyfin.Plugin.Animated.Music_1.2.0.zip",
-        "checksum": "b5489063594132be60d5c439a23b84e3",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.1.0",
-        "changelog": "Added support for exposing the info to the API",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.1.0/Jellyfin.Plugin.Animated.Music_1.1.0.zip",
-        "checksum": "ec6c9141b308ddf545100fe8c727d4ca",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
-      },
-      {
-        "version": "1.0.0",
-        "changelog": "Initial release with support for animated covers and vertical backgrounds",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/v1.0.0/Jellyfin.Plugin.Animated.Music_1.0.0.zip",
-        "checksum": "4e02572733f49d627acb13480b15310f",
-        "timestamp": "2025-07-12T00:00:00.0000000Z"
       }
     ]
   }
