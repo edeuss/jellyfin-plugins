@@ -3,11 +3,11 @@
 # Build script for Jellyfin.Plugin.Animated.Music
 set -e
 
-# Parse version from Plugin.cs (extract only the version string)
-PLUGIN_CS="Jellyfin.Plugin.Animated.Music/Plugin.cs"
-VERSION=$(grep 'Version' "$PLUGIN_CS" | grep -oE '"[0-9]+(\.[0-9]+)*"' | tr -d '"')
+# Parse version from .csproj file (extract AssemblyVersion)
+CSPROJ_FILE="Jellyfin.Plugin.Animated.Music/Jellyfin.Plugin.Animated.Music.csproj"
+VERSION=$(grep '<AssemblyVersion>' "$CSPROJ_FILE" | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
 if [ -z "$VERSION" ]; then
-  echo "Error: Could not determine version from $PLUGIN_CS"
+  echo "Error: Could not determine version from $CSPROJ_FILE"
   exit 1
 fi
 
