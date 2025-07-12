@@ -37,7 +37,7 @@ Music/
 │   │   ├── 02 - Track 2.mp3
 │   │   ├── cover-animated.gif          # Animated cover
 │   │   ├── vertical-background.mp4     # Vertical background
-│   │   └── cover.jpg                   # Static cover (optional)
+│   │   └── cover.jpg                   
 │   └── Another Album/
 │       ├── 01 - Track 1.mp3
 │       ├── cover-animated.webm         # Different format
