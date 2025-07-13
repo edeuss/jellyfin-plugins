@@ -143,16 +143,42 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                     return NotFound("Invalid track ID");
                 }
 
+                var item = _libraryManager.GetItemById(guid);
+                if (item is not Audio track)
+                {
+                    return NotFound("Track not found");
+                }
+
                 var trackInfo = GetTrackInfo(trackId);
                 if (trackInfo == (string.Empty, string.Empty))
                 {
                     return NotFound("Track not found");
                 }
 
+                var folderPath = Path.GetDirectoryName(track.Path);
+                var fileName = Path.GetFileName(track.Path);
+
+                if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+                {
+                    return NotFound("Track path not found");
+                }
+
+                // Get the album that contains this track for album-level files
+                var album = track.AlbumEntity;
+                var albumPath = album?.ContainingFolderPath;
+
                 var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
 
-                var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern);
+                // Check for track-specific vertical background
+                var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
+
+                // Check for album-level vertical background if no track-specific one found
+                var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
+                    ? FindAnimatedFile(albumPath, "vertical-background")
+                    : null;
+
+                var verticalBackgroundPath = trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
                 if (string.IsNullOrEmpty(verticalBackgroundPath))
                 {
                     return NotFound("Track vertical background not found");
