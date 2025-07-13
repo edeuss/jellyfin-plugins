@@ -161,6 +161,48 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         }
 
         /// <summary>
+        /// Gets the animated cover for the album containing the specified track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The animated cover file for the track's album.</returns>
+        [HttpGet("Track/{trackId}/AnimatedCover")]
+        public IActionResult GetTrackAnimatedCover(string trackId)
+        {
+            try
+            {
+                var trackInfo = GetTrackInfo(trackId);
+                if (trackInfo == (string.Empty, string.Empty))
+                {
+                    return NotFound("Track not found");
+                }
+
+                var animatedCoverPath = FindAnimatedFile(trackInfo.FolderPath, "cover-animated");
+                if (string.IsNullOrEmpty(animatedCoverPath))
+                {
+                    return NotFound("Animated cover not found for track's album");
+                }
+
+                var fileInfo = new FileInfo(animatedCoverPath);
+                if (!fileInfo.Exists)
+                {
+                    return NotFound("Animated cover file not found");
+                }
+
+                var contentType = GetContentType(fileInfo.Extension);
+                var stream = System.IO.File.OpenRead(animatedCoverPath);
+
+                _logger.LogDebug("Serving animated cover for track {TrackId}: {FilePath}", trackId, animatedCoverPath);
+
+                return File(stream, contentType, fileInfo.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error serving animated cover for track {TrackId}", trackId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
         /// Gets information about animated files for a music album.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
@@ -216,12 +258,15 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
                 var verticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern);
+                var animatedCoverPath = FindAnimatedFile(trackInfo.FolderPath, "cover-animated");
 
                 var info = new
                 {
                     TrackId = trackId,
                     TrackFileName = trackFileName,
+                    HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
                     HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
+                    AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCover" : null,
                     VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Track/{trackId}/VerticalBackground" : null
                 };
 

@@ -101,6 +101,14 @@ GET /AnimatedMusic/Album/{albumId}/Info
 }
 ```
 
+### Get Track Animated Cover
+
+```text
+GET /AnimatedMusic/Track/{trackId}/AnimatedCover
+```
+
+Returns the animated cover file for the specified tracks album cover.
+
 ### Get Track Vertical Background
 
 ```text
@@ -118,8 +126,9 @@ GET /AnimatedMusic/Track/{trackId}/Info
 ```json
 {
   "TrackId": "d5861930-8da6-499c-b7dd-235c60703f64",
-  "TrackFileName": "The cool track",
+  "HasAnimatedCover": true,
   "HasVerticalBackground": true,
+  "AnimatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
   "VerticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
 }
 ```
