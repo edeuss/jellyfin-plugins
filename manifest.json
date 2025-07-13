@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.5.4",
+        "changelog": "Added album vertical background as backup for track.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.5.4/Jellyfin.Plugin.Animated.Music_1.5.4.zip",
+        "checksum": "bb85de8c5b01c0a555c3ddc7a4a9db17",
+        "timestamp": "2025-07-13T13:00:00.0000000Z"
+      },
+      {
         "version": "1.5.3",
         "changelog": "Fixed plugin treating the videos as attachments.",
         "targetAbi": "10.10.0.0",
@@ -15,7 +23,6 @@
         "checksum": "f7e6234ccf7fb3fd334f5f78fcfdb8e5",
         "timestamp": "2025-07-13T11:00:00.0000000Z"
       },
-
       {
         "version": "1.5.2",
         "changelog": "Add guid checks.",
