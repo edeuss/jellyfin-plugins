@@ -93,11 +93,11 @@ GET /AnimatedMusic/Album/{albumId}/Info
 
 ```json
 {
-  "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
-  "hasAnimatedCover": true,
-  "hasVerticalBackground": true,
-  "animatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
-  "verticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
+  "AlbumId": "d5861930-8da6-499c-b7dd-235c60703f64",
+  "HasAnimatedCover": true,
+  "HasVerticalBackground": true,
+  "AnimatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
+  "VerticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
 }
 ```
 
@@ -107,10 +107,21 @@ GET /AnimatedMusic/Album/{albumId}/Info
 GET /AnimatedMusic/Track/{trackId}/VerticalBackground
 ```
 
+Returns the vertical background file for the specified track.
+
 ### Get Track Animated Info
 
 ```text
 GET /AnimatedMusic/Track/{trackId}/Info
+```
+
+```json
+{
+  "TrackId": "d5861930-8da6-499c-b7dd-235c60703f64",
+  "TrackFileName": "The cool track",
+  "HasVerticalBackground": true,
+  "VerticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
+}
 ```
 
 ### Notes
