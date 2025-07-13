@@ -70,7 +70,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 _logger.LogDebug("Serving animated cover for album {AlbumId}: {FilePath}", albumId, animatedCoverPath);
 
-                return File(stream, contentType, fileInfo.Name);
+                return File(stream, contentType);
             }
             catch (Exception ex)
             {
@@ -118,7 +118,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 _logger.LogDebug("Serving vertical background for album {AlbumId}: {FilePath}", albumId, verticalBackgroundPath);
 
-                return File(stream, contentType, fileInfo.Name);
+                return File(stream, contentType);
             }
             catch (Exception ex)
             {
@@ -169,7 +169,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 _logger.LogDebug("Serving track vertical background for track {TrackId}: {FilePath}", trackId, verticalBackgroundPath);
 
-                return File(stream, contentType, fileInfo.Name);
+                return File(stream, contentType);
             }
             catch (Exception ex)
             {
@@ -230,7 +230,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 _logger.LogDebug("Serving animated cover for track {TrackId}: {FilePath}", trackId, animatedCoverPath);
 
-                return File(stream, contentType, fileInfo.Name);
+                return File(stream, contentType);
             }
             catch (Exception ex)
             {
@@ -304,22 +304,23 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                     return NotFound("Track not found");
                 }
 
-                // Get track info for track-specific files
-                var trackInfo = GetTrackInfo(trackId);
-                if (trackInfo == (string.Empty, string.Empty))
+                var folderPath = Path.GetDirectoryName(track.Path);
+                var fileName = Path.GetFileName(track.Path);
+
+                if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
                 {
-                    return NotFound("Track not found");
+                    return NotFound("Track path not found");
                 }
 
                 // Get the album that contains this track for album-level files
                 var album = track.AlbumEntity;
                 var albumPath = album?.ContainingFolderPath;
 
-                var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
+                var trackFileName = Path.GetFileNameWithoutExtension(fileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
 
                 // Check for track-specific vertical background
-                var trackVerticalBackgroundPath = FindAnimatedFile(trackInfo.FolderPath, verticalBackgroundPattern);
+                var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
 
                 // Check for album-level vertical background if no track-specific one found
                 var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
