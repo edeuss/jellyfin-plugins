@@ -39,44 +39,12 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Album/{albumId}/AnimatedCover")]
         public IActionResult GetAnimatedCover(string albumId)
         {
-            try
+            return ExecuteWithErrorHandling(albumId, "animated cover for album", () =>
             {
-                //Check the album id format
-                if (!Guid.TryParse(albumId, out var guid))
-                {
-                    return NotFound("Invalid album ID");
-                }
-
-                var albumPath = GetAlbumPath(albumId);
-                if (string.IsNullOrEmpty(albumPath))
-                {
-                    return NotFound("Album not found");
-                }
-
-                var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
-                if (string.IsNullOrEmpty(animatedCoverPath))
-                {
-                    return NotFound("Animated cover not found");
-                }
-
-                var fileInfo = new FileInfo(animatedCoverPath);
-                if (!fileInfo.Exists)
-                {
-                    return NotFound("Animated cover file not found");
-                }
-
-                var contentType = GetContentType(fileInfo.Extension);
-                var stream = System.IO.File.OpenRead(animatedCoverPath);
-
-                _logger.LogDebug("Serving animated cover for album {AlbumId}: {FilePath}", albumId, animatedCoverPath);
-
-                return File(stream, contentType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error serving animated cover for album {AlbumId}", albumId);
-                return StatusCode(500, "Internal server error");
-            }
+                var album = GetValidatedAlbum(albumId);
+                var filePath = FindAnimatedFile(album.ContainingFolderPath, "cover-animated");
+                return ServeAnimatedFile(filePath, $"animated cover for album {albumId}");
+            });
         }
 
         /// <summary>
@@ -87,44 +55,12 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Album/{albumId}/VerticalBackground")]
         public IActionResult GetVerticalBackground(string albumId)
         {
-            try
+            return ExecuteWithErrorHandling(albumId, "vertical background for album", () =>
             {
-                //Check the album id format
-                if (!Guid.TryParse(albumId, out var guid))
-                {
-                    return NotFound("Invalid album ID");
-                }
-
-                var albumPath = GetAlbumPath(albumId);
-                if (string.IsNullOrEmpty(albumPath))
-                {
-                    return NotFound("Album not found");
-                }
-
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
-                if (string.IsNullOrEmpty(verticalBackgroundPath))
-                {
-                    return NotFound("Vertical background not found");
-                }
-
-                var fileInfo = new FileInfo(verticalBackgroundPath);
-                if (!fileInfo.Exists)
-                {
-                    return NotFound("Vertical background file not found");
-                }
-
-                var contentType = GetContentType(fileInfo.Extension);
-                var stream = System.IO.File.OpenRead(verticalBackgroundPath);
-
-                _logger.LogDebug("Serving vertical background for album {AlbumId}: {FilePath}", albumId, verticalBackgroundPath);
-
-                return File(stream, contentType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error serving vertical background for album {AlbumId}", albumId);
-                return StatusCode(500, "Internal server error");
-            }
+                var album = GetValidatedAlbum(albumId);
+                var filePath = FindAnimatedFile(album.ContainingFolderPath, "vertical-background");
+                return ServeAnimatedFile(filePath, $"vertical background for album {albumId}");
+            });
         }
 
         /// <summary>
@@ -135,73 +71,12 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Track/{trackId}/VerticalBackground")]
         public IActionResult GetTrackVerticalBackground(string trackId)
         {
-            try
+            return ExecuteWithErrorHandling(trackId, "vertical background for track", () =>
             {
-                //Check the track id format
-                if (!Guid.TryParse(trackId, out var guid))
-                {
-                    return NotFound("Invalid track ID");
-                }
-
-                var item = _libraryManager.GetItemById(guid);
-                if (item is not Audio track)
-                {
-                    return NotFound("Track not found");
-                }
-
-                var trackInfo = GetTrackInfo(trackId);
-                if (trackInfo == (string.Empty, string.Empty))
-                {
-                    return NotFound("Track not found");
-                }
-
-                var folderPath = Path.GetDirectoryName(track.Path);
-                var fileName = Path.GetFileName(track.Path);
-
-                if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-                {
-                    return NotFound("Track path not found");
-                }
-
-                // Get the album that contains this track for album-level files
-                var album = track.AlbumEntity;
-                var albumPath = album?.ContainingFolderPath;
-
-                var trackFileName = Path.GetFileNameWithoutExtension(trackInfo.FileName);
-                var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
-
-                // Check for track-specific vertical background
-                var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
-
-                // Check for album-level vertical background if no track-specific one found
-                var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
-                    ? FindAnimatedFile(albumPath, "vertical-background")
-                    : null;
-
-                var verticalBackgroundPath = trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
-                if (string.IsNullOrEmpty(verticalBackgroundPath))
-                {
-                    return NotFound("Track vertical background not found");
-                }
-
-                var fileInfo = new FileInfo(verticalBackgroundPath);
-                if (!fileInfo.Exists)
-                {
-                    return NotFound("Track vertical background file not found");
-                }
-
-                var contentType = GetContentType(fileInfo.Extension);
-                var stream = System.IO.File.OpenRead(verticalBackgroundPath);
-
-                _logger.LogDebug("Serving track vertical background for track {TrackId}: {FilePath}", trackId, verticalBackgroundPath);
-
-                return File(stream, contentType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error serving track vertical background for track {TrackId}", trackId);
-                return StatusCode(500, "Internal server error");
-            }
+                var track = GetValidatedTrack(trackId);
+                var filePath = FindTrackVerticalBackground(track);
+                return ServeAnimatedFile(filePath, $"track vertical background for track {trackId}");
+            });
         }
 
         /// <summary>
@@ -212,57 +87,12 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Track/{trackId}/AnimatedCover")]
         public IActionResult GetTrackAnimatedCover(string trackId)
         {
-            try
+            return ExecuteWithErrorHandling(trackId, "animated cover for track", () =>
             {
-                //Check the track id format
-                if (!Guid.TryParse(trackId, out var guid))
-                {
-                    return NotFound("Invalid track ID");
-                }
-
-                var item = _libraryManager.GetItemById(guid);
-                if (item is not Audio track)
-                {
-                    return NotFound("Track not found");
-                }
-
-                // Get the album that contains this track
-                var album = track.AlbumEntity;
-                if (album == null)
-                {
-                    return NotFound("Track's album not found");
-                }
-
-                var albumPath = album.ContainingFolderPath;
-                if (string.IsNullOrEmpty(albumPath))
-                {
-                    return NotFound("Album path not found");
-                }
-
-                var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
-                if (string.IsNullOrEmpty(animatedCoverPath))
-                {
-                    return NotFound("Animated cover not found for track's album");
-                }
-
-                var fileInfo = new FileInfo(animatedCoverPath);
-                if (!fileInfo.Exists)
-                {
-                    return NotFound("Animated cover file not found");
-                }
-
-                var contentType = GetContentType(fileInfo.Extension);
-                var stream = System.IO.File.OpenRead(animatedCoverPath);
-
-                _logger.LogDebug("Serving animated cover for track {TrackId}: {FilePath}", trackId, animatedCoverPath);
-
-                return File(stream, contentType);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error serving animated cover for track {TrackId}", trackId);
-                return StatusCode(500, "Internal server error");
-            }
+                var track = GetValidatedTrack(trackId);
+                var filePath = FindTrackAnimatedCover(track);
+                return ServeAnimatedFile(filePath, $"animated cover for track {trackId}");
+            });
         }
 
         /// <summary>
@@ -273,19 +103,10 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Album/{albumId}/Info")]
         public IActionResult GetAnimatedInfo(string albumId)
         {
-            try
+            return ExecuteWithErrorHandling(albumId, "animated info for album", () =>
             {
-                //Check the album id format
-                if (!Guid.TryParse(albumId, out var guid))
-                {
-                    return NotFound("Invalid album ID");
-                }
-
-                var albumPath = GetAlbumPath(albumId);
-                if (string.IsNullOrEmpty(albumPath))
-                {
-                    return NotFound("Album not found");
-                }
+                var album = GetValidatedAlbum(albumId);
+                var albumPath = album.ContainingFolderPath;
 
                 var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
                 var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
@@ -300,12 +121,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 };
 
                 return Ok(info);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting animated info for album {AlbumId}", albumId);
-                return StatusCode(500, "Internal server error");
-            }
+            });
         }
 
         /// <summary>
@@ -316,20 +132,9 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         [HttpGet("Track/{trackId}/Info")]
         public IActionResult GetTrackAnimatedInfo(string trackId)
         {
-            try
+            return ExecuteWithErrorHandling(trackId, "animated info for track", () =>
             {
-                //Check the track id format
-                if (!Guid.TryParse(trackId, out var guid))
-                {
-                    return NotFound("Invalid track ID");
-                }
-
-                var item = _libraryManager.GetItemById(guid);
-                if (item is not Audio track)
-                {
-                    return NotFound("Track not found");
-                }
-
+                var track = GetValidatedTrack(trackId);
                 var folderPath = Path.GetDirectoryName(track.Path);
                 var fileName = Path.GetFileName(track.Path);
 
@@ -338,24 +143,17 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                     return NotFound("Track path not found");
                 }
 
-                // Get the album that contains this track for album-level files
                 var album = track.AlbumEntity;
                 var albumPath = album?.ContainingFolderPath;
-
                 var trackFileName = Path.GetFileNameWithoutExtension(fileName);
                 var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
 
-                // Check for track-specific vertical background
                 var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
-
-                // Check for album-level vertical background if no track-specific one found
                 var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
                     ? FindAnimatedFile(albumPath, "vertical-background")
                     : null;
 
                 var verticalBackgroundPath = trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
-
-                // Check for animated cover in the album folder
                 var animatedCoverPath = !string.IsNullOrEmpty(albumPath) ? FindAnimatedFile(albumPath, "cover-animated") : null;
 
                 var info = new
@@ -370,63 +168,124 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 };
 
                 return Ok(info);
+            });
+        }
+
+        // Private helper methods to reduce duplication
+
+        private IActionResult ExecuteWithErrorHandling(string id, string operation, Func<IActionResult> action)
+        {
+            try
+            {
+                return action();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting track animated info for track {TrackId}", trackId);
+                _logger.LogError(ex, "Error serving {Operation} for ID {Id}", operation, id);
                 return StatusCode(500, "Internal server error");
             }
         }
 
-        private string GetAlbumPath(string albumId)
+        private MusicAlbum GetValidatedAlbum(string albumId)
         {
-            try
+            if (!Guid.TryParse(albumId, out var guid))
             {
-                if (!Guid.TryParse(albumId, out var guid))
-                {
-                    return null;
-                }
-
-                var item = _libraryManager.GetItemById(guid);
-                if (item is not MusicAlbum album)
-                {
-                    return null;
-                }
-
-                return album.ContainingFolderPath;
+                throw new ArgumentException("Invalid album ID");
             }
-            catch (Exception ex)
+
+            var item = _libraryManager.GetItemById(guid);
+            if (item is not MusicAlbum album)
             {
-                _logger.LogError(ex, "Error getting album path for ID {AlbumId}", albumId);
-                return null;
+                throw new ArgumentException("Album not found");
             }
+
+            return album;
         }
 
-        private (string FolderPath, string FileName) GetTrackInfo(string trackId)
+        private Audio GetValidatedTrack(string trackId)
         {
-            try
+            if (!Guid.TryParse(trackId, out var guid))
             {
-                if (!Guid.TryParse(trackId, out var guid))
-                {
-                    return (null, null);
-                }
-
-                var item = _libraryManager.GetItemById(guid);
-                if (item is not Audio track)
-                {
-                    return (null, null);
-                }
-
-                var folderPath = Path.GetDirectoryName(track.Path);
-                var fileName = Path.GetFileName(track.Path);
-
-                return (folderPath, fileName);
+                throw new ArgumentException("Invalid track ID");
             }
-            catch (Exception ex)
+
+            var item = _libraryManager.GetItemById(guid);
+            if (item is not Audio track)
             {
-                _logger.LogError(ex, "Error getting track info for ID {TrackId}", trackId);
-                return (null, null);
+                throw new ArgumentException("Track not found");
             }
+
+            return track;
+        }
+
+        private string FindTrackAnimatedCover(Audio track)
+        {
+            var folderPath = Path.GetDirectoryName(track.Path);
+            var fileName = Path.GetFileName(track.Path);
+
+            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Track path not found");
+            }
+
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
+            var trackAnimatedCoverPattern = $"cover-animated-{trackFileName}";
+
+            // Check for track-specific animated cover first
+            var trackAnimatedCoverPath = FindAnimatedFile(folderPath, trackAnimatedCoverPattern);
+
+            // Fall back to album-level animated cover if no track-specific one found
+            var albumAnimatedCoverPath = string.IsNullOrEmpty(trackAnimatedCoverPath) && !string.IsNullOrEmpty(albumPath)
+                ? FindAnimatedFile(albumPath, "cover-animated")
+                : null;
+
+            return trackAnimatedCoverPath ?? albumAnimatedCoverPath;
+        }
+
+        private string FindTrackVerticalBackground(Audio track)
+        {
+            var folderPath = Path.GetDirectoryName(track.Path);
+            var fileName = Path.GetFileName(track.Path);
+
+            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Track path not found");
+            }
+
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
+            var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
+
+            var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
+            var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
+                ? FindAnimatedFile(albumPath, "vertical-background")
+                : null;
+
+            return trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
+        }
+
+        private IActionResult ServeAnimatedFile(string filePath, string logContext)
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return NotFound("Animated file not found");
+            }
+
+            var fileInfo = new FileInfo(filePath);
+            if (!fileInfo.Exists)
+            {
+                return NotFound("Animated file not found");
+            }
+
+            var contentType = GetContentType(fileInfo.Extension);
+            var stream = System.IO.File.OpenRead(filePath);
+
+            _logger.LogDebug("Serving {LogContext}: {FilePath}", logContext, filePath);
+
+            return File(stream, contentType);
         }
 
         private string FindAnimatedFile(string albumPath, string fileNamePattern)
@@ -435,7 +294,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             {
                 return null;
             }
-
 
             try
             {
