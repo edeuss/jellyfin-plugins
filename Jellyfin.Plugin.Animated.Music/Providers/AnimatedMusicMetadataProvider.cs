@@ -14,7 +14,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
     /// <summary>
     /// Metadata provider for adding animated content information to audio tracks.
     /// </summary>
-    public class AnimatedMusicMetadataProvider : ICustomMetadataProvider<Audio>, IHasOrder
+    public class AnimatedMusicMetadataProvider : IMetadataProvider<Audio>, IHasOrder
     {
         private readonly ILogger<AnimatedMusicMetadataProvider> _logger;
 
@@ -34,14 +34,21 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         public string Name => "Animated Music Metadata Provider";
 
         /// <inheritdoc />
-        public int Order => 100;
+        public int Order => 10; // Lower number = higher priority
 
         /// <inheritdoc />
-        public bool Supports(BaseItem item) => item is Audio;
+        public bool Supports(BaseItem item)
+        {
+            var supports = item is Audio;
+            _logger.LogInformation("AnimatedMusicMetadataProvider.Supports called for item {ItemName} (type: {ItemType}): {Supports}",
+                item.Name, item.GetType().Name, supports);
+            return supports;
+        }
 
         /// <inheritdoc />
         public Task<ItemUpdateType> FetchAsync(Audio item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("AnimatedMusicMetadataProvider.FetchAsync called for track {TrackName}", item.Name);
             try
             {
                 var updateType = ItemUpdateType.None;

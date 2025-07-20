@@ -44,7 +44,7 @@ namespace Jellyfin.Plugin.Animated.Music
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<ICustomMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
+            serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
         }
     }
 
