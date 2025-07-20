@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.6.1",
+        "changelog": "Improved metadata setting.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.6.1/Jellyfin.Plugin.Animated.Music_1.6.1.zip",
+        "checksum": "e715d7122a86365805299e9aa692c13f",
+        "timestamp": "2025-07-20T14:00:00.0000000Z"
+      },
+      {
         "version": "1.6.0",
         "changelog": "Added custom track metadata provider.",
         "targetAbi": "10.10.0.0",
