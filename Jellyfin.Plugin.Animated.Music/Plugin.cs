@@ -2,15 +2,19 @@ using System;
 using System.Collections.Generic;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using Microsoft.Extensions.DependencyInjection;
+using Jellyfin.Plugin.Animated.Music.Providers;
 
 namespace Jellyfin.Plugin.Animated.Music
 {
     /// <summary>
     /// Main plugin class for Jellyfin.Plugin.Animated.Music.
     /// </summary>
-    public class Plugin : BasePlugin<PluginConfiguration>
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration
     {
         /// <summary>
         /// Gets the plugin instance.
@@ -36,6 +40,12 @@ namespace Jellyfin.Plugin.Animated.Music
 
         /// <inheritdoc />
         public override string Description => "Adds animated cover and vertical video background support for music albums";
+
+        /// <inheritdoc />
+        public void RegisterServices(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddSingleton<ICustomMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
+        }
     }
 
     /// <summary>
@@ -45,4 +55,4 @@ namespace Jellyfin.Plugin.Animated.Music
     {
         // Empty configuration for now
     }
-} 
+}

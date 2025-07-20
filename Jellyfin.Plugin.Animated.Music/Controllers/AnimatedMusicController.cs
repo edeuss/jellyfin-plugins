@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.Animated.Music.Controllers
 {
@@ -168,6 +169,34 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 };
 
                 return Ok(info);
+            });
+        }
+
+        /// <summary>
+        /// Gets animated metadata stored in track properties.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>Animated metadata information.</returns>
+        [HttpGet("Track/{trackId}/Metadata")]
+        public IActionResult GetTrackAnimatedMetadata(string trackId)
+        {
+            return ExecuteWithErrorHandling(trackId, "animated metadata for track", () =>
+            {
+                var track = GetValidatedTrack(trackId);
+
+                var metadata = new
+                {
+                    TrackId = trackId,
+                    TrackName = track.Name,
+                    HasAnimatedCover = track.HasProviderId("AnimatedCover"),
+                    HasVerticalBackground = track.HasProviderId("VerticalBackground"),
+                    HasTrackSpecificVerticalBackground = bool.TryParse(track.GetProviderId("HasTrackSpecificVerticalBackground"), out var hasTrackSpecific) && hasTrackSpecific,
+                    AnimatedCover = track.GetProviderId("AnimatedCover"),
+                    VerticalBackground = track.GetProviderId("VerticalBackground"),
+                    LastMetadataRefresh = track.DateLastRefreshed
+                };
+
+                return Ok(metadata);
             });
         }
 
