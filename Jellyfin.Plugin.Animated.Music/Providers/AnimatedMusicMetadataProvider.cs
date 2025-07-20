@@ -59,7 +59,6 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                 var verticalBackgroundPath = FindTrackVerticalBackground(item);
                 if (!string.IsNullOrEmpty(verticalBackgroundPath))
                 {
-
                     // Check if it's track-specific
                     var folderPath = Path.GetDirectoryName(item.Path);
                     var fileName = Path.GetFileName(item.Path);
@@ -67,20 +66,16 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                     var trackVerticalBackgroundPattern = $"vertical-background-{trackFileName}";
                     var trackSpecificPath = FindAnimatedFile(folderPath, trackVerticalBackgroundPattern);
 
-                    if (string.IsNullOrEmpty(trackSpecificPath))
-                    {
-                        item.SetProviderId("VerticalBackground", trackSpecificPath);
+                    // Prioritize track-specific path if it exists, otherwise use the general path
+                    var finalPath = !string.IsNullOrEmpty(trackSpecificPath) ? trackSpecificPath : verticalBackgroundPath;
+                    item.SetProviderId("VerticalBackground", finalPath);
 
-                    }
-                    else
-                    {
-                        item.SetProviderId("VerticalBackground", verticalBackgroundPath);
-                    }
-
+                    // Track whether this is track-specific or not
                     item.SetProviderId("HasTrackSpecificVerticalBackground", (!string.IsNullOrEmpty(trackSpecificPath)).ToString());
 
-                    updateType |= MediaBrowser.Controller.Library.ItemUpdateType.MetadataEdit;
-                    _logger.LogDebug("Found vertical background for track {TrackName}: {BackgroundPath}", item.Name, verticalBackgroundPath);
+                    updateType |= ItemUpdateType.MetadataEdit;
+                    _logger.LogDebug("Found vertical background for track {TrackName}: {BackgroundPath} (Track-specific: {IsTrackSpecific})",
+                        item.Name, finalPath, !string.IsNullOrEmpty(trackSpecificPath));
                 }
 
                 return Task.FromResult(updateType);
