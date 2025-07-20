@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.6.2",
+        "changelog": "Switch to use IMetadataProvider.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.6.2/Jellyfin.Plugin.Animated.Music_1.6.2.zip",
+        "checksum": "6636054cc610507deb65ed7046a1dea8",
+        "timestamp": "2025-07-20T14:03:00.0000000Z"
+      },
+      {
         "version": "1.6.1",
         "changelog": "Improved metadata setting.",
         "targetAbi": "10.10.0.0",
