@@ -5,8 +5,10 @@ using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Jellyfin.Plugin.Animated.Music.Providers;
+using Jellyfin.Plugin.Animated.Music.Tasks;
 
 namespace Jellyfin.Plugin.Animated.Music
 {
@@ -45,6 +47,9 @@ namespace Jellyfin.Plugin.Animated.Music
         {
             // Register the metadata provider
             serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
+
+            // Register the scheduled task
+            serviceCollection.AddTransient<IScheduledTask, AnimatedMusicScanTask>();
         }
     }
 
