@@ -52,18 +52,34 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
             try
             {
                 var updateType = ItemUpdateType.None;
+                bool hasChanges = false;
 
                 // Find animated cover
                 var animatedCoverPath = FindTrackAnimatedCover(item);
+                var currentAnimatedCover = item.GetProviderId("AnimatedCover");
+
                 if (!string.IsNullOrEmpty(animatedCoverPath))
                 {
-                    item.SetProviderId("AnimatedCover", animatedCoverPath);
-                    updateType |= ItemUpdateType.MetadataEdit;
-                    _logger.LogDebug("Found animated cover for track {TrackName}: {CoverPath}", item.Name, animatedCoverPath);
+                    if (currentAnimatedCover != animatedCoverPath)
+                    {
+                        item.SetProviderId("AnimatedCover", animatedCoverPath);
+                        hasChanges = true;
+                        _logger.LogDebug("Updated animated cover for track {TrackName}: {CoverPath}", item.Name, animatedCoverPath);
+                    }
+                }
+                else if (!string.IsNullOrEmpty(currentAnimatedCover))
+                {
+                    // Remove outdated animated cover reference
+                    item.SetProviderId("AnimatedCover", string.Empty);
+                    hasChanges = true;
+                    _logger.LogDebug("Removed outdated animated cover for track {TrackName}", item.Name);
                 }
 
                 // Find vertical background
                 var verticalBackgroundPath = FindTrackVerticalBackground(item);
+                var currentVerticalBackground = item.GetProviderId("VerticalBackground");
+                var currentTrackSpecific = item.GetProviderId("HasTrackSpecificVerticalBackground");
+
                 if (!string.IsNullOrEmpty(verticalBackgroundPath))
                 {
                     // Check if it's track-specific
@@ -75,14 +91,41 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
 
                     // Prioritize track-specific path if it exists, otherwise use the general path
                     var finalPath = !string.IsNullOrEmpty(trackSpecificPath) ? trackSpecificPath : verticalBackgroundPath;
-                    item.SetProviderId("VerticalBackground", finalPath);
+                    var isTrackSpecific = !string.IsNullOrEmpty(trackSpecificPath);
+                    var trackSpecificString = isTrackSpecific.ToString();
 
-                    // Track whether this is track-specific or not
-                    item.SetProviderId("HasTrackSpecificVerticalBackground", (!string.IsNullOrEmpty(trackSpecificPath)).ToString());
+                    if (currentVerticalBackground != finalPath)
+                    {
+                        item.SetProviderId("VerticalBackground", finalPath);
+                        hasChanges = true;
+                        _logger.LogDebug("Updated vertical background for track {TrackName}: {BackgroundPath}", item.Name, finalPath);
+                    }
 
-                    updateType |= ItemUpdateType.MetadataEdit;
-                    _logger.LogDebug("Found vertical background for track {TrackName}: {BackgroundPath} (Track-specific: {IsTrackSpecific})",
-                        item.Name, finalPath, !string.IsNullOrEmpty(trackSpecificPath));
+                    if (currentTrackSpecific != trackSpecificString)
+                    {
+                        item.SetProviderId("HasTrackSpecificVerticalBackground", trackSpecificString);
+                        hasChanges = true;
+                        _logger.LogDebug("Updated track-specific flag for track {TrackName}: {IsTrackSpecific}", item.Name, isTrackSpecific);
+                    }
+                }
+                else if (!string.IsNullOrEmpty(currentVerticalBackground))
+                {
+                    // Remove outdated vertical background references
+                    item.SetProviderId("VerticalBackground", string.Empty);
+                    item.SetProviderId("HasTrackSpecificVerticalBackground", string.Empty);
+                    hasChanges = true;
+                    _logger.LogDebug("Removed outdated vertical background for track {TrackName}", item.Name);
+                }
+
+                // Only return MetadataEdit if we actually made changes
+                if (hasChanges)
+                {
+                    updateType = ItemUpdateType.MetadataEdit;
+                    _logger.LogInformation("Updated animated metadata for track {TrackName} - changes detected", item.Name);
+                }
+                else
+                {
+                    _logger.LogDebug("No changes needed for track {TrackName}", item.Name);
                 }
 
                 return Task.FromResult(updateType);
@@ -90,7 +133,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching animated metadata for track {TrackId}: {TrackName}", item.Id, item.Name);
-                return Task.FromResult(MediaBrowser.Controller.Library.ItemUpdateType.None);
+                return Task.FromResult(ItemUpdateType.None);
             }
         }
 

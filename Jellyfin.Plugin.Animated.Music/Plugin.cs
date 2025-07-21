@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Entities.Audio;
@@ -44,6 +43,7 @@ namespace Jellyfin.Plugin.Animated.Music
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection)
         {
+            // Register the metadata provider
             serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
         }
     }
