@@ -194,6 +194,23 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                             _logger.LogDebug("Found album: {AlbumName} for folder: {FolderPath}", album.Name, folder);
 
+                            // First refresh the album metadata
+                            _logger.LogDebug("Starting metadata refresh for album: {AlbumName} (ID: {AlbumId})", album.Name, album.Id);
+                            await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                            {
+                                ImageRefreshMode = MetadataRefreshMode.None,
+                                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                ForceSave = true,
+                                ReplaceAllMetadata = false,
+                                ReplaceAllImages = false
+                            }, cancellationToken);
+
+                            // Verify album metadata was updated
+                            var albumHasAnimatedCover = album.HasProviderId("AnimatedCover");
+                            var albumHasVerticalBackground = album.HasProviderId("VerticalBackground");
+                            _logger.LogDebug("Refreshed album metadata - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
+                                album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
+
                             // Get all tracks in this album
                             var tracksInAlbum = _libraryManager.GetItemList(new InternalItemsQuery
                             {
@@ -223,11 +240,11 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     }, cancellationToken);
 
                                     // Verify that the provider was called by checking if provider IDs were set
-                                    var hasAnimatedCover = track.HasProviderId("AnimatedCover");
-                                    var hasVerticalBackground = track.HasProviderId("VerticalBackground");
+                                    var trackHasAnimatedCover = track.HasProviderId("AnimatedCover");
+                                    var trackHasVerticalBackground = track.HasProviderId("VerticalBackground");
 
-                                    _logger.LogDebug("Refreshed metadata for track: {TrackName} - HasAnimatedCover: {HasCover}, HasVerticalBackground: {HasBackground}",
-                                        track.Name, hasAnimatedCover, hasVerticalBackground);
+                                    _logger.LogDebug("Refreshed track metadata - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
+                                        track.Name, trackHasAnimatedCover, trackHasVerticalBackground);
                                 }
                                 catch (Exception ex)
                                 {
