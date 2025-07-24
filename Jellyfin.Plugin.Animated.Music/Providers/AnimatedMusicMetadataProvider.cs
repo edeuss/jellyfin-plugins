@@ -14,7 +14,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
     /// <summary>
     /// Metadata provider for adding animated content information to audio tracks.
     /// </summary>
-    public class AnimatedMusicMetadataProvider : IMetadataProvider<Audio>, IHasOrder
+    public class AnimatedMusicMetadataProvider : IMetadataProvider<MusicAlbum>, IHasOrder
     {
         private readonly ILogger<AnimatedMusicMetadataProvider> _logger;
 
