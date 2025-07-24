@@ -77,8 +77,8 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                 foreach (var library in allLibraries)
                 {
-                    _logger.LogInformation("Library: {Name}, MediaType: {MediaType}, SourceType: {SourceType}",
-                        library.Name, library.MediaType, library.SourceType);
+                    _logger.LogInformation("Library: {Name}, ExtraType: {ExtraType}, LocationType: {LocationType}",
+                        library.Name, library.ExtraType, library.LocationType);
                 }
 
                 // Get all music libraries using the correct approach
