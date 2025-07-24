@@ -34,21 +34,21 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         public string Name => "Animated Music Metadata Provider";
 
         /// <inheritdoc />
-        public int Order => 10; // Lower number = higher priority
+        public int Order => 100;
 
         /// <inheritdoc />
         public bool Supports(BaseItem item)
         {
             var supports = item is Audio;
-            _logger.LogInformation("AnimatedMusicMetadataProvider.Supports called for item {ItemName} (type: {ItemType}): {Supports}",
-                item.Name, item.GetType().Name, supports);
+            _logger.LogInformation("AnimatedMusicMetadataProvider.Supports called for item {ItemName} (ID: {ItemId}, type: {ItemType}): {Supports}",
+                item.Name, item.Id, item.GetType().Name, supports);
             return supports;
         }
 
         /// <inheritdoc />
         public Task<ItemUpdateType> FetchAsync(Audio item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("AnimatedMusicMetadataProvider.FetchAsync called for track {TrackName}", item.Name);
+            _logger.LogInformation("AnimatedMusicMetadataProvider.FetchAsync called for track {TrackName} (ID: {TrackId})", item.Name, item.Id);
             try
             {
                 var updateType = ItemUpdateType.None;
@@ -121,7 +121,8 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                 if (hasChanges)
                 {
                     updateType = ItemUpdateType.MetadataEdit;
-                    _logger.LogInformation("Updated animated metadata for track {TrackName} - changes detected", item.Name);
+                    _logger.LogInformation("Updated animated metadata for track {TrackName} - changes detected. AnimatedCover: {HasCover}, VerticalBackground: {HasBackground}",
+                        item.Name, !string.IsNullOrEmpty(animatedCoverPath), !string.IsNullOrEmpty(verticalBackgroundPath));
                 }
                 else
                 {
