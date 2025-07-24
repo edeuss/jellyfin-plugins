@@ -46,8 +46,8 @@ namespace Jellyfin.Plugin.Animated.Music
         public void RegisterServices(IServiceCollection serviceCollection)
         {
             serviceCollection.AddTransient<IScheduledTask, AnimatedMusicScanTask>();
-            serviceCollection.AddTransient<IMetadataProvider<MusicAlbum>, AnimatedAlbumMetadataProvider>();
-            serviceCollection.AddTransient<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
+            serviceCollection.AddSingleton<IMetadataProvider<MusicAlbum>, AnimatedAlbumMetadataProvider>();
+            serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
 
             // Log registration for debugging
             System.Diagnostics.Debug.WriteLine("AnimatedMusicPlugin: Registered providers and scheduled task");
