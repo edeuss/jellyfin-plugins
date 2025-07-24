@@ -150,6 +150,9 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                     _logger.LogInformation("Scanning music library: {LibraryName}", musicLibrary.Name);
                     var refreshFolders = await ScanMusicLibraryAsync(musicLibrary, cancellationToken);
 
+                    _logger.LogInformation("Library {LibraryName} returned {FolderCount} folders to refresh",
+                        musicLibrary.Name, refreshFolders.Count);
+
                     foreach (var folder in refreshFolders)
                     {
                         foldersToRefresh.Add(folder);
@@ -160,13 +163,17 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                     progress?.Report(progressPercentage);
                 }
 
+                _logger.LogInformation("Total folders to refresh after scanning all libraries: {TotalFolders}", foldersToRefresh.Count);
+
                 // Trigger refresh for folders with animated content
-                if (foldersToRefresh.Any())
+                if (foldersToRefresh.Count != 0)
                 {
                     _logger.LogInformation("Triggering metadata refresh for tracks in {FolderCount} folders with animated content", foldersToRefresh.Count);
 
                     foreach (var folder in foldersToRefresh)
                     {
+                        _logger.LogInformation("Processing folder: {FolderPath}", folder);
+
                         if (cancellationToken.IsCancellationRequested)
                         {
                             break;
@@ -184,12 +191,16 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                 Path = folder
                             }).Cast<Audio>();
 
+                            _logger.LogInformation("Found {TrackCount} tracks in folder: {FolderPath}", tracksInFolder.Count(), folder);
+
                             foreach (var track in tracksInFolder)
                             {
                                 if (cancellationToken.IsCancellationRequested) break;
 
                                 try
                                 {
+                                    _logger.LogDebug("Starting metadata refresh for track: {TrackName} (ID: {TrackId})", track.Name, track.Id);
+
                                     // Force metadata refresh for this specific track
                                     await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
                                     {
