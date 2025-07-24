@@ -42,7 +42,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
         }
 
         /// <inheritdoc />
-        public string Name => "Scan for Animated Music Updates";
+        public string Name => "Scan for Animated Covers and backgrounds";
 
         /// <inheritdoc />
         public string Description => "Scans for new or updated animated covers and vertical backgrounds for music tracks and albums.";
