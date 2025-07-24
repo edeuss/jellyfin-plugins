@@ -10,6 +10,8 @@ using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Controller.Providers;
 
 namespace Jellyfin.Plugin.Animated.Music.Tasks
 {
@@ -20,6 +22,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
     {
         private readonly ILibraryManager _libraryManager;
         private readonly ILogger<AnimatedMusicScanTask> _logger;
+        private readonly IFileSystem _fileSystem;
 
         // Hardcoded configuration values (same as providers)
         private static readonly string[] SupportedAnimatedFormats = { ".gif", ".mp4", ".webm", ".mov", ".avi" };
@@ -29,10 +32,12 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
         /// </summary>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
-        public AnimatedMusicScanTask(ILibraryManager libraryManager, ILogger<AnimatedMusicScanTask> logger)
+        /// <param name="fileSystem">The file system.</param>
+        public AnimatedMusicScanTask(ILibraryManager libraryManager, ILogger<AnimatedMusicScanTask> logger, IFileSystem fileSystem)
         {
             _libraryManager = libraryManager;
             _logger = logger;
+            _fileSystem = fileSystem;
         }
 
         /// <inheritdoc />
@@ -107,7 +112,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                 // Trigger refresh for folders with animated content
                 if (foldersToRefresh.Any())
                 {
-                    _logger.LogInformation("Triggering library refresh for {FolderCount} folders with animated content", foldersToRefresh.Count);
+                    _logger.LogInformation("Triggering metadata refresh for tracks in {FolderCount} folders with animated content", foldersToRefresh.Count);
 
                     foreach (var folder in foldersToRefresh)
                     {
@@ -118,12 +123,34 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                         try
                         {
-                            _logger.LogDebug("Refreshing folder: {FolderPath}", folder);
-                            await _libraryManager.ValidateMediaLibrary(new SimpleProgress<double>(), cancellationToken);
+                            _logger.LogDebug("Refreshing tracks in folder: {FolderPath}", folder);
+
+                            // Get all tracks in this folder and refresh their metadata
+                            var tracksInFolder = _libraryManager.GetItemList(new InternalItemsQuery
+                            {
+                                IncludeItemTypes = new[] { BaseItemKind.Audio },
+                                Recursive = true,
+                                Path = folder
+                            }).Cast<Audio>();
+
+                            foreach (var track in tracksInFolder)
+                            {
+                                if (cancellationToken.IsCancellationRequested) break;
+
+                                // Force metadata refresh for this specific track
+                                await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                {
+                                    ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+                                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                    ForceSave = true
+                                }, cancellationToken);
+
+                                _logger.LogDebug("Refreshed metadata for track: {TrackName}", track.Name);
+                            }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "Failed to refresh folder: {FolderPath}", folder);
+                            _logger.LogWarning(ex, "Failed to refresh tracks in folder: {FolderPath}", folder);
                         }
                     }
                 }
