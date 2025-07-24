@@ -72,10 +72,21 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
             try
             {
+                var allLibraries = _libraryManager.RootFolder.Children.ToList();
+                _logger.LogInformation("Found {Count} total libraries", allLibraries.Count);
+
+                foreach (var library in allLibraries)
+                {
+                    _logger.LogInformation("Library: {Name}, MediaType: {MediaType}, SourceType: {SourceType}",
+                        library.Name, library.MediaType, library.SourceType);
+                }
+
                 // Get all music libraries using the correct approach
                 var musicLibraries = _libraryManager.RootFolder.Children
                     .Where(library => library.MediaType == MediaType.Audio)
                     .ToList();
+
+                _logger.LogInformation("Found {Count} music libraries", musicLibraries.Count);
 
                 if (musicLibraries.Count == 0)
                 {
