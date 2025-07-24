@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.7.1",
+        "changelog": "Small bug fixes.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.1/Jellyfin.Plugin.Animated.Music_1.7.1.zip",
+        "checksum": "d2e63a6779f90dd15fe16465cc0dc4c6",
+        "timestamp": "2025-07-24T14:03:00.0000000Z"
+      },
+      {
         "version": "1.7.0",
         "changelog": "Add scheduled task for scanning.",
         "targetAbi": "10.10.0.0",
