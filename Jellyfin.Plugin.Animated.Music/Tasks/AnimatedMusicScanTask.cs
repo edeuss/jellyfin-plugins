@@ -172,8 +172,6 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                     foreach (var folder in foldersToRefresh)
                     {
-                        _logger.LogInformation("Processing folder: {FolderPath}", folder);
-
                         if (cancellationToken.IsCancellationRequested)
                         {
                             break;
@@ -181,19 +179,32 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                         try
                         {
-                            _logger.LogDebug("Refreshing tracks in folder: {FolderPath}", folder);
+                            // Try to find the album that corresponds to this folder
+                            var album = await Task.Run(() => _libraryManager.GetItemList(new InternalItemsQuery
+                            {
+                                IncludeItemTypes = new[] { BaseItemKind.MusicAlbum },
+                                Recursive = true
+                            }).Cast<MusicAlbum>().FirstOrDefault(a => a.ContainingFolderPath == folder), cancellationToken);
 
-                            // Get all tracks in this folder and refresh their metadata
-                            var tracksInFolder = _libraryManager.GetItemList(new InternalItemsQuery
+                            if (album == null)
+                            {
+                                _logger.LogWarning("Could not find album for folder: {FolderPath}", folder);
+                                continue;
+                            }
+
+                            _logger.LogDebug("Found album: {AlbumName} for folder: {FolderPath}", album.Name, folder);
+
+                            // Get all tracks in this album
+                            var tracksInAlbum = _libraryManager.GetItemList(new InternalItemsQuery
                             {
                                 IncludeItemTypes = new[] { BaseItemKind.Audio },
-                                Recursive = true,
-                                Path = folder
+                                Recursive = false,
+                                Parent = album
                             }).Cast<Audio>();
 
-                            _logger.LogInformation("Found {TrackCount} tracks in folder: {FolderPath}", tracksInFolder.Count(), folder);
+                            _logger.LogInformation("Found {TrackCount} tracks in album: {AlbumName}", tracksInAlbum.Count(), album.Name);
 
-                            foreach (var track in tracksInFolder)
+                            foreach (var track in tracksInAlbum)
                             {
                                 if (cancellationToken.IsCancellationRequested) break;
 
