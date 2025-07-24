@@ -12,6 +12,7 @@ using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
 
 namespace Jellyfin.Plugin.Animated.Music.Tasks
 {
@@ -187,15 +188,29 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                             {
                                 if (cancellationToken.IsCancellationRequested) break;
 
-                                // Force metadata refresh for this specific track
-                                await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                try
                                 {
-                                    ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                                    ForceSave = true
-                                }, cancellationToken);
+                                    // Force metadata refresh for this specific track
+                                    await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                    {
+                                        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+                                        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                        ForceSave = true,
+                                        ReplaceAllMetadata = false, // Don't replace existing metadata, just add/update
+                                        ReplaceAllImages = false    // Don't replace existing images, just add/update
+                                    }, cancellationToken);
 
-                                _logger.LogDebug("Refreshed metadata for track: {TrackName}", track.Name);
+                                    // Verify that the provider was called by checking if provider IDs were set
+                                    var hasAnimatedCover = track.HasProviderId("AnimatedCover");
+                                    var hasVerticalBackground = track.HasProviderId("VerticalBackground");
+
+                                    _logger.LogDebug("Refreshed metadata for track: {TrackName} - HasAnimatedCover: {HasCover}, HasVerticalBackground: {HasBackground}",
+                                        track.Name, hasAnimatedCover, hasVerticalBackground);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogWarning(ex, "Failed to refresh metadata for track: {TrackName}", track.Name);
+                                }
                             }
                         }
                         catch (Exception ex)
