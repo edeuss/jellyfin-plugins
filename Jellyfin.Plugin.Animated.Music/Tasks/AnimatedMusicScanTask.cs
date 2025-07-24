@@ -195,21 +195,28 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                             _logger.LogDebug("Found album: {AlbumName} for folder: {FolderPath}", album.Name, folder);
 
                             // First refresh the album metadata
-                            _logger.LogDebug("Starting metadata refresh for album: {AlbumName} (ID: {AlbumId})", album.Name, album.Id);
-                            await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                            _logger.LogInformation("Starting metadata refresh for album: {AlbumName} (ID: {AlbumId})", album.Name, album.Id);
+                            try
                             {
-                                ImageRefreshMode = MetadataRefreshMode.None,
-                                MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                                ForceSave = true,
-                                ReplaceAllMetadata = false,
-                                ReplaceAllImages = false
-                            }, cancellationToken);
+                                await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                {
+                                    ImageRefreshMode = MetadataRefreshMode.None,
+                                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                    ForceSave = true,
+                                    ReplaceAllMetadata = true,  // Try with true to force provider execution
+                                    ReplaceAllImages = false
+                                }, cancellationToken);
 
-                            // Verify album metadata was updated
-                            var albumHasAnimatedCover = album.HasProviderId("AnimatedCover");
-                            var albumHasVerticalBackground = album.HasProviderId("VerticalBackground");
-                            _logger.LogDebug("Refreshed album metadata - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
-                                album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
+                                // Verify album metadata was updated
+                                var albumHasAnimatedCover = album.HasProviderId("AnimatedCover");
+                                var albumHasVerticalBackground = album.HasProviderId("VerticalBackground");
+                                _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
+                                    album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to refresh metadata for album: {AlbumName}", album.Name);
+                            }
 
                             // Get all tracks in this album
                             var tracksInAlbum = _libraryManager.GetItemList(new InternalItemsQuery
@@ -227,7 +234,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                                 try
                                 {
-                                    _logger.LogDebug("Starting metadata refresh for track: {TrackName} (ID: {TrackId})", track.Name, track.Id);
+                                    _logger.LogInformation("Starting metadata refresh for track: {TrackName} (ID: {TrackId})", track.Name, track.Id);
 
                                     // Force metadata refresh for this specific track
                                     await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
@@ -235,7 +242,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                         ImageRefreshMode = MetadataRefreshMode.None,
                                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                                         ForceSave = true,
-                                        ReplaceAllMetadata = false, // Don't replace existing metadata, just add/update
+                                        ReplaceAllMetadata = true,  // Try with true to force provider execution
                                         ReplaceAllImages = false    // Don't replace existing images, just add/update
                                     }, cancellationToken);
 
@@ -243,7 +250,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     var trackHasAnimatedCover = track.HasProviderId("AnimatedCover");
                                     var trackHasVerticalBackground = track.HasProviderId("VerticalBackground");
 
-                                    _logger.LogDebug("Refreshed track metadata - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
+                                    _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
                                         track.Name, trackHasAnimatedCover, trackHasVerticalBackground);
                                 }
                                 catch (Exception ex)

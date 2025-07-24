@@ -28,6 +28,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         public AnimatedAlbumMetadataProvider(ILogger<AnimatedAlbumMetadataProvider> logger)
         {
             _logger = logger;
+            _logger.LogInformation("AnimatedAlbumMetadataProvider constructor called - provider initialized");
         }
 
         /// <inheritdoc />
