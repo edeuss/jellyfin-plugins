@@ -235,12 +235,21 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         {
             if (!Guid.TryParse(trackId, out var guid))
             {
+                _logger.LogWarning("Invalid track ID format: {TrackId}", trackId);
                 throw new ArgumentException("Invalid track ID");
             }
 
             var item = _libraryManager.GetItemById(guid);
+            if (item == null)
+            {
+                _logger.LogWarning("Track not found in library: {TrackId}", trackId);
+                throw new ArgumentException("Track not found");
+            }
+
             if (item is not Audio track)
             {
+                _logger.LogWarning("Item found but is not an Audio track. Item type: {ItemType}, Item name: {ItemName}",
+                    item.GetType().Name, item.Name);
                 throw new ArgumentException("Track not found");
             }
 
