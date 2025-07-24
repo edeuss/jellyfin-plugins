@@ -198,12 +198,16 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                             _logger.LogInformation("Starting metadata refresh for album: {AlbumName} (ID: {AlbumId})", album.Name, album.Id);
                             try
                             {
+                                // Check if album has animated content before refresh
+                                var hasAnimatedContent = CheckForAnimatedContent(album.ContainingFolderPath);
+                                _logger.LogInformation("Album {AlbumName} has animated content: {HasContent}", album.Name, hasAnimatedContent);
+
                                 await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
                                 {
                                     ImageRefreshMode = MetadataRefreshMode.None,
                                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                                     ForceSave = true,
-                                    ReplaceAllMetadata = true,  // Try with true to force provider execution
+                                    ReplaceAllMetadata = true,
                                     ReplaceAllImages = false
                                 }, cancellationToken);
 
