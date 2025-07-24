@@ -200,6 +200,33 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             });
         }
 
+        /// <summary>
+        /// Gets animated metadata stored in album properties.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <returns>Animated metadata information.</returns>
+        [HttpGet("Album/{albumId}/Metadata")]
+        public IActionResult GetAlbumAnimatedMetadata(string albumId)
+        {
+            return ExecuteWithErrorHandling(albumId, "animated metadata for album", () =>
+            {
+                var album = GetValidatedAlbum(albumId);
+
+                var metadata = new
+                {
+                    AlbumId = albumId,
+                    AlbumName = album.Name,
+                    HasAnimatedCover = album.HasProviderId("AnimatedCover"),
+                    HasVerticalBackground = album.HasProviderId("VerticalBackground"),
+                    AnimatedCover = album.GetProviderId("AnimatedCover"),
+                    VerticalBackground = album.GetProviderId("VerticalBackground"),
+                    LastMetadataRefresh = album.DateLastRefreshed
+                };
+
+                return Ok(metadata);
+            });
+        }
+
         // Private helper methods to reduce duplication
 
         private IActionResult ExecuteWithErrorHandling(string id, string operation, Func<IActionResult> action)
