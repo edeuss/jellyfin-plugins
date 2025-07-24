@@ -215,7 +215,7 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     // Force metadata refresh for this specific track
                                     await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
                                     {
-                                        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
+                                        ImageRefreshMode = MetadataRefreshMode.None,
                                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                                         ForceSave = true,
                                         ReplaceAllMetadata = false, // Don't replace existing metadata, just add/update
