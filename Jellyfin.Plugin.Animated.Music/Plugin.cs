@@ -45,10 +45,6 @@ namespace Jellyfin.Plugin.Animated.Music
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection)
         {
-            // Register the metadata provider
-            serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
-
-            // Register the scheduled task
             serviceCollection.AddTransient<IScheduledTask, AnimatedMusicScanTask>();
         }
     }
