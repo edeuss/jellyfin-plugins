@@ -75,16 +75,55 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                 var allLibraries = _libraryManager.RootFolder.Children.ToList();
                 _logger.LogInformation("Found {Count} total libraries", allLibraries.Count);
 
+                // Log all library properties for debugging
                 foreach (var library in allLibraries)
                 {
-                    _logger.LogInformation("Library: {Name}, ExtraType: {ExtraType}, LocationType: {LocationType}",
-                        library.Name, library.ExtraType, library.LocationType);
+                    _logger.LogInformation("Library: {Name}, MediaType: {MediaType}, ExtraType: {ExtraType}, LocationType: {LocationType}",
+                        library.Name, library.MediaType, library.ExtraType, library.LocationType);
                 }
 
-                // Get all music libraries using the correct approach
-                var musicLibraries = _libraryManager.RootFolder.Children
-                    .Where(library => library.MediaType == MediaType.Audio)
-                    .ToList();
+                // Improved music library detection
+                var musicLibraries = new List<BaseItem>();
+
+                foreach (var library in allLibraries)
+                {
+                    // Method 1: Check MediaType (most reliable when set correctly)
+                    if (library.MediaType == MediaType.Audio)
+                    {
+                        musicLibraries.Add(library);
+                        _logger.LogDebug("Added library '{LibraryName}' as music library (MediaType: Audio)", library.Name);
+                        continue;
+                    }
+
+                    // Method 2: Check if it contains music content (fallback for Unknown MediaType)
+                    if (library.MediaType == MediaType.Unknown)
+                    {
+                        try
+                        {
+                            // Check if this library contains any music albums or audio tracks
+                            var hasMusicContent = await Task.Run(() => _libraryManager.GetItemList(new InternalItemsQuery
+                            {
+                                IncludeItemTypes = new[] { BaseItemKind.MusicAlbum, BaseItemKind.Audio },
+                                Recursive = true,
+                                Parent = library
+                            }).Any(), cancellationToken);
+
+                            if (hasMusicContent)
+                            {
+                                musicLibraries.Add(library);
+                                _logger.LogInformation("Added library '{LibraryName}' as music library (MediaType: Unknown, but contains music content)", library.Name);
+                            }
+                            else
+                            {
+                                _logger.LogDebug("Library '{LibraryName}' has MediaType Unknown but contains no music content", library.Name);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Error checking music content in library '{LibraryName}'", library.Name);
+                        }
+                    }
+                }
 
                 _logger.LogInformation("Found {Count} music libraries", musicLibraries.Count);
 
