@@ -114,33 +114,24 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         }
 
         /// <summary>
-        /// Checks if animated cover exists for a track (track-specific or album-level).
+        /// Checks if animated cover exists for a track (inherits from album).
         /// </summary>
         /// <param name="track">The audio track.</param>
         /// <returns>True if animated cover exists; otherwise, false.</returns>
         private bool CheckAnimatedCoverExists(Audio track)
         {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
 
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            if (string.IsNullOrEmpty(albumPath))
             {
+                _logger.LogDebug("No album path found for track {TrackName}", track.Name);
                 return false;
             }
 
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var trackAnimatedCoverPattern = $"cover-animated-{trackFileName}";
-
-            // Check for track-specific animated cover first
-            if (HasAnimatedFile(folderPath, trackAnimatedCoverPattern))
-            {
-                return true;
-            }
-
-            // Fall back to album-level animated cover
-            return !string.IsNullOrEmpty(albumPath) && HasAnimatedFile(albumPath, "cover-animated");
+            var hasAnimatedCover = HasAnimatedFile(albumPath, "cover-animated");
+            _logger.LogDebug("Checked album-level animated cover for track {TrackName}: {HasCover}", track.Name, hasAnimatedCover);
+            return hasAnimatedCover;
         }
 
         /// <summary>
@@ -150,27 +141,27 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         /// <returns>Tuple containing (hasVerticalBackground, isTrackSpecific).</returns>
         private (bool hasVerticalBackground, bool isTrackSpecific) CheckVerticalBackgroundExists(Audio track)
         {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(track.Path);
+            var trackBackgroundPattern = $"vertical-background-{trackFileName}";
 
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            if (string.IsNullOrEmpty(albumPath))
             {
+                _logger.LogDebug("No album path found for track {TrackName}", track.Name);
                 return (false, false);
             }
 
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
-
             // Check for track-specific vertical background first
-            if (HasAnimatedFile(folderPath, verticalBackgroundPattern))
+            if (HasAnimatedFile(albumPath, trackBackgroundPattern))
             {
+                _logger.LogDebug("Found track-specific vertical background for track {TrackName}: {Pattern}", track.Name, trackBackgroundPattern);
                 return (true, true);
             }
 
             // Fall back to album-level vertical background
-            var hasAlbumBackground = !string.IsNullOrEmpty(albumPath) && HasAnimatedFile(albumPath, "vertical-background");
+            var hasAlbumBackground = HasAnimatedFile(albumPath, "vertical-background");
+            _logger.LogDebug("Checked album-level vertical background for track {TrackName}: {HasBackground}", track.Name, hasAlbumBackground);
             return (hasAlbumBackground, false);
         }
 
