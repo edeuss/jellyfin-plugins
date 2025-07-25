@@ -194,32 +194,35 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                             _logger.LogDebug("Found album: {AlbumName} for folder: {FolderPath}", album.Name, folder);
 
-                            // First refresh the album metadata
-                            _logger.LogInformation("Starting metadata refresh for album: {AlbumName} (ID: {AlbumId})", album.Name, album.Id);
-                            try
+                            // Check if album has animated cover before refreshing
+                            var hasAlbumAnimatedCover = CheckForAnimatedCover(album.ContainingFolderPath);
+                            if (hasAlbumAnimatedCover)
                             {
-                                // Check if album has animated content before refresh
-                                var hasAnimatedContent = CheckForAnimatedContent(album.ContainingFolderPath);
-                                _logger.LogInformation("Album {AlbumName} has animated content: {HasContent}", album.Name, hasAnimatedContent);
-
-                                await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                _logger.LogInformation("Album {AlbumName} has animated cover, refreshing metadata", album.Name);
+                                try
                                 {
-                                    ImageRefreshMode = MetadataRefreshMode.None,
-                                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                                    ForceSave = true,
-                                    ReplaceAllMetadata = false,
-                                    ReplaceAllImages = false
-                                }, cancellationToken);
+                                    await album.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                    {
+                                        ImageRefreshMode = MetadataRefreshMode.None,
+                                        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                        ForceSave = true,
+                                        ReplaceAllMetadata = false,
+                                        ReplaceAllImages = false
+                                    }, cancellationToken);
 
-                                // Verify album metadata was updated
-                                var albumHasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var albumCover) && albumCover;
-                                var albumHasVerticalBackground = bool.TryParse(album.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var albumBg) && albumBg;
-                                _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
-                                    album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
+                                    // Verify album metadata was updated
+                                    var albumHasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var albumCover) && albumCover;
+                                    _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover})",
+                                        album.Name, albumHasAnimatedCover);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Failed to refresh metadata for album: {AlbumName}", album.Name);
+                                }
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                _logger.LogError(ex, "Failed to refresh metadata for album: {AlbumName}", album.Name);
+                                _logger.LogDebug("Album {AlbumName} has no animated cover, skipping metadata refresh", album.Name);
                             }
 
                             // Get all tracks in this album
@@ -238,24 +241,36 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
 
                                 try
                                 {
-                                    _logger.LogInformation("Starting metadata refresh for track: {TrackName} (ID: {TrackId})", track.Name, track.Id);
+                                    var trackFolderPath = Path.GetDirectoryName(track.Path);
+                                    var trackFileName = Path.GetFileNameWithoutExtension(track.Path);
 
-                                    // Force metadata refresh for this specific track
-                                    await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                    // Check if this specific track has vertical background before refreshing
+                                    var hasTrackVerticalBackground = HasTrackSpecificVerticalBackground(trackFolderPath, trackFileName);
+
+                                    if (hasTrackVerticalBackground)
                                     {
-                                        ImageRefreshMode = MetadataRefreshMode.None,
-                                        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                                        ForceSave = true,
-                                        ReplaceAllMetadata = false,
-                                        ReplaceAllImages = false
-                                    }, cancellationToken);
+                                        _logger.LogInformation("Track {TrackName} has vertical background, refreshing metadata", track.Name);
 
-                                    // Verify that the provider was called by checking if provider IDs were set
-                                    var trackHasAnimatedCover = bool.TryParse(track.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var trackCover) && trackCover;
-                                    var trackHasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var trackBg) && trackBg;
+                                        // Force metadata refresh for this specific track
+                                        await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                                        {
+                                            ImageRefreshMode = MetadataRefreshMode.None,
+                                            MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
+                                            ForceSave = true,
+                                            ReplaceAllMetadata = false,
+                                            ReplaceAllImages = false
+                                        }, cancellationToken);
 
-                                    _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
-                                        track.Name, trackHasAnimatedCover, trackHasVerticalBackground);
+                                        // Verify that the provider was called by checking if provider IDs were set
+                                        var trackHasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var trackBg) && trackBg;
+
+                                        _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Background: {TrackBg})",
+                                            track.Name, trackHasVerticalBackground);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogDebug("Track {TrackName} has no vertical background, skipping metadata refresh", track.Name);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -423,6 +438,77 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
             catch (Exception ex)
             {
                 _logger.LogDebug(ex, "Error checking for track-specific animated content in directory: {DirectoryPath}", directoryPath);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a directory contains an animated cover file.
+        /// </summary>
+        /// <param name="directoryPath">The directory path to check.</param>
+        /// <returns>True if animated cover is found; otherwise, false.</returns>
+        private bool CheckForAnimatedCover(string directoryPath)
+        {
+            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var animatedCoverFiles = Directory.GetFiles(directoryPath)
+                    .Where(file =>
+                    {
+                        var fileName = Path.GetFileName(file);
+                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+
+                        return nameWithoutExtension.Equals("cover-animated", StringComparison.OrdinalIgnoreCase) &&
+                               Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
+                    });
+
+                return animatedCoverFiles.Any();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Error checking for animated cover in directory: {DirectoryPath}", directoryPath);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a directory contains track-specific vertical background.
+        /// </summary>
+        /// <param name="directoryPath">The directory path to check.</param>
+        /// <param name="trackFileName">The track file name without extension.</param>
+        /// <returns>True if track-specific vertical background is found; otherwise, false.</returns>
+        private bool HasTrackSpecificVerticalBackground(string directoryPath, string trackFileName)
+        {
+            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath) || string.IsNullOrEmpty(trackFileName))
+            {
+                return false;
+            }
+
+            try
+            {
+                var trackBackgroundPattern = $"vertical-background-{trackFileName}";
+
+                var trackBackgroundFiles = Directory.GetFiles(directoryPath)
+                    .Where(file =>
+                    {
+                        var fileName = Path.GetFileName(file);
+                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+
+                        return nameWithoutExtension.Equals(trackBackgroundPattern, StringComparison.OrdinalIgnoreCase) &&
+                               Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
+                    });
+
+                return trackBackgroundFiles.Any();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Error checking for track-specific vertical background in directory: {DirectoryPath}", directoryPath);
                 return false;
             }
         }
