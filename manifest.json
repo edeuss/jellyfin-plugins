@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "1.7.14",
+        "changelog": "Fix logic.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.14/Jellyfin.Plugin.Animated.Music_1.7.14.zip",
+        "checksum": "571b0cf9bea3928b8560c3daf72cf6b8",
+        "timestamp": "2025-07-25T15:03:00.0000000Z"
+      },
+      {
         "version": "1.7.13",
         "changelog": "Fix logic.",
         "targetAbi": "10.10.0.0",
