@@ -207,13 +207,13 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     ImageRefreshMode = MetadataRefreshMode.None,
                                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                                     ForceSave = true,
-                                    ReplaceAllMetadata = true,
+                                    ReplaceAllMetadata = false,
                                     ReplaceAllImages = false
                                 }, cancellationToken);
 
                                 // Verify album metadata was updated
-                                var albumHasAnimatedCover = album.HasProviderId("AnimatedCover");
-                                var albumHasVerticalBackground = album.HasProviderId("VerticalBackground");
+                                var albumHasAnimatedCover = album.HasProviderId("AnimatedMusic.AnimatedCover");
+                                var albumHasVerticalBackground = album.HasProviderId("AnimatedMusic.VerticalBackground");
                                 _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
                                     album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
                             }
@@ -246,13 +246,13 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                         ImageRefreshMode = MetadataRefreshMode.None,
                                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                                         ForceSave = true,
-                                        ReplaceAllMetadata = true,  // Try with true to force provider execution
-                                        ReplaceAllImages = false    // Don't replace existing images, just add/update
+                                        ReplaceAllMetadata = false,
+                                        ReplaceAllImages = false
                                     }, cancellationToken);
 
                                     // Verify that the provider was called by checking if provider IDs were set
-                                    var trackHasAnimatedCover = track.HasProviderId("AnimatedCover");
-                                    var trackHasVerticalBackground = track.HasProviderId("VerticalBackground");
+                                    var trackHasAnimatedCover = track.HasProviderId("AnimatedMusic.AnimatedCover");
+                                    var trackHasVerticalBackground = track.HasProviderId("AnimatedMusic.VerticalBackground");
 
                                     _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
                                         track.Name, trackHasAnimatedCover, trackHasVerticalBackground);
