@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         public string Name => "Animated Track Metadata Provider";
 
         /// <inheritdoc />
-        public int Order => 100;
+        public int Order => 10;
 
         /// <inheritdoc />
         public bool Supports(BaseItem item)
@@ -54,7 +54,9 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         /// <inheritdoc />
         public Task<ItemUpdateType> FetchAsync(Audio item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("AnimatedMusicMetadataProvider.FetchAsync called for track {TrackName} (ID: {TrackId})", item.Name, item.Id);
+            _logger.LogInformation("=== AnimatedMusicMetadataProvider.FetchAsync STARTED for track {TrackName} (ID: {TrackId}) ===", item.Name, item.Id);
+            _logger.LogInformation("MetadataRefreshOptions - MetadataRefreshMode: {MetadataMode}, ImageRefreshMode: {ImageMode}, ReplaceAllMetadata: {ReplaceAll}, ForceSave: {ForceSave}",
+                options.MetadataRefreshMode, options.ImageRefreshMode, options.ReplaceAllMetadata, options.ForceSave);
             try
             {
                 var updateType = ItemUpdateType.None;
