@@ -324,11 +324,11 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                     continue;
                 }
 
-                // Check for album-level animated content
-                var hasAlbumAnimatedContent = CheckForAnimatedContent(albumPath);
-                var hasTrackSpecificContent = false;
+                // Check for album-level animated cover
+                var hasAlbumAnimatedCover = CheckForAnimatedCover(albumPath);
+                var hasTrackVerticalBackgrounds = false;
 
-                // Check for track-specific animated content
+                // Check for track-specific vertical backgrounds
                 var albumTracks = _libraryManager.GetItemList(new InternalItemsQuery
                 {
                     IncludeItemTypes = new[] { BaseItemKind.Audio },
@@ -346,100 +346,27 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                     var trackFolderPath = Path.GetDirectoryName(track.Path);
                     var trackFileName = Path.GetFileNameWithoutExtension(track.Path);
 
-                    if (HasTrackSpecificAnimatedContent(trackFolderPath, trackFileName))
+                    if (HasTrackSpecificVerticalBackground(trackFolderPath, trackFileName))
                     {
-                        hasTrackSpecificContent = true;
-                        _logger.LogDebug("Found track-specific animated content for: {TrackName}", track.Name);
+                        hasTrackVerticalBackgrounds = true;
+                        _logger.LogDebug("Found track-specific vertical background for: {TrackName}", track.Name);
                         break; // Found content in this album, no need to check more tracks
                     }
                 }
 
                 // If we found animated content, mark this album folder for refresh
-                if (hasAlbumAnimatedContent || hasTrackSpecificContent)
+                if (hasAlbumAnimatedCover || hasTrackVerticalBackgrounds)
                 {
                     if (!foldersToRefresh.Contains(albumPath))
                     {
                         foldersToRefresh.Add(albumPath);
-                        _logger.LogDebug("Added album folder for refresh: {AlbumPath} ({AlbumName})", albumPath, album.Name);
+                        _logger.LogDebug("Added album folder for refresh: {AlbumPath} ({AlbumName}) - Animated Cover: {HasCover}, Track Backgrounds: {HasBackgrounds}",
+                            albumPath, album.Name, hasAlbumAnimatedCover, hasTrackVerticalBackgrounds);
                     }
                 }
             }
 
             return foldersToRefresh;
-        }
-
-        /// <summary>
-        /// Checks if a directory contains animated content files.
-        /// </summary>
-        /// <param name="directoryPath">The directory path to check.</param>
-        /// <returns>True if animated content is found; otherwise, false.</returns>
-        private bool CheckForAnimatedContent(string directoryPath)
-        {
-            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
-            {
-                return false;
-            }
-
-            try
-            {
-                var animatedFiles = Directory.GetFiles(directoryPath)
-                    .Where(file =>
-                    {
-                        var fileName = Path.GetFileName(file);
-                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-                        var extension = Path.GetExtension(fileName).ToLowerInvariant();
-
-                        return (nameWithoutExtension.Equals("cover-animated", StringComparison.OrdinalIgnoreCase) ||
-                                nameWithoutExtension.Equals("vertical-background", StringComparison.OrdinalIgnoreCase)) &&
-                               Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
-                    });
-
-                return animatedFiles.Any();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error checking for animated content in directory: {DirectoryPath}", directoryPath);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Checks if a directory contains track-specific animated content.
-        /// </summary>
-        /// <param name="directoryPath">The directory path to check.</param>
-        /// <param name="trackFileName">The track file name without extension.</param>
-        /// <returns>True if track-specific animated content is found; otherwise, false.</returns>
-        private bool HasTrackSpecificAnimatedContent(string directoryPath, string trackFileName)
-        {
-            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath) || string.IsNullOrEmpty(trackFileName))
-            {
-                return false;
-            }
-
-            try
-            {
-                var trackCoverPattern = $"cover-animated-{trackFileName}";
-                var trackBackgroundPattern = $"vertical-background-{trackFileName}";
-
-                var trackSpecificFiles = Directory.GetFiles(directoryPath)
-                    .Where(file =>
-                    {
-                        var fileName = Path.GetFileName(file);
-                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-                        var extension = Path.GetExtension(fileName).ToLowerInvariant();
-
-                        return (nameWithoutExtension.Equals(trackCoverPattern, StringComparison.OrdinalIgnoreCase) ||
-                                nameWithoutExtension.Equals(trackBackgroundPattern, StringComparison.OrdinalIgnoreCase)) &&
-                               Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
-                    });
-
-                return trackSpecificFiles.Any();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error checking for track-specific animated content in directory: {DirectoryPath}", directoryPath);
-                return false;
-            }
         }
 
         /// <summary>
