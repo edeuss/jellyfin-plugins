@@ -188,11 +188,9 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 {
                     TrackId = trackId,
                     TrackName = track.Name,
-                    HasAnimatedCover = track.HasProviderId("AnimatedMusic.AnimatedCover"),
-                    HasVerticalBackground = track.HasProviderId("AnimatedMusic.VerticalBackground"),
+                    HasAnimatedCover = bool.TryParse(track.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var hasCover) && hasCover,
+                    HasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var hasBackground) && hasBackground,
                     HasTrackSpecificVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasTrackSpecificVerticalBackground"), out var hasTrackSpecific) && hasTrackSpecific,
-                    AnimatedCover = track.GetProviderId("AnimatedMusic.AnimatedCover"),
-                    VerticalBackground = track.GetProviderId("AnimatedMusic.VerticalBackground"),
                     LastMetadataRefresh = track.DateLastRefreshed
                 };
 
@@ -216,10 +214,8 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 {
                     AlbumId = albumId,
                     AlbumName = album.Name,
-                    HasAnimatedCover = album.HasProviderId("AnimatedMusic.AnimatedCover"),
-                    HasVerticalBackground = album.HasProviderId("AnimatedMusic.VerticalBackground"),
-                    AnimatedCover = album.GetProviderId("AnimatedMusic.AnimatedCover"),
-                    VerticalBackground = album.GetProviderId("AnimatedMusic.VerticalBackground"),
+                    HasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var hasCover) && hasCover,
+                    HasVerticalBackground = bool.TryParse(album.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var hasBackground) && hasBackground,
                     LastMetadataRefresh = album.DateLastRefreshed
                 };
 

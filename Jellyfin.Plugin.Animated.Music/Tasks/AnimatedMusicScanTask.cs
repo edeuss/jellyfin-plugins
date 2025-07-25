@@ -212,8 +212,8 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                 }, cancellationToken);
 
                                 // Verify album metadata was updated
-                                var albumHasAnimatedCover = album.HasProviderId("AnimatedMusic.AnimatedCover");
-                                var albumHasVerticalBackground = album.HasProviderId("AnimatedMusic.VerticalBackground");
+                                var albumHasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var albumCover) && albumCover;
+                                var albumHasVerticalBackground = bool.TryParse(album.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var albumBg) && albumBg;
                                 _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover}, Background: {AlbumBg})",
                                     album.Name, albumHasAnimatedCover, albumHasVerticalBackground);
                             }
@@ -251,8 +251,8 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     }, cancellationToken);
 
                                     // Verify that the provider was called by checking if provider IDs were set
-                                    var trackHasAnimatedCover = track.HasProviderId("AnimatedMusic.AnimatedCover");
-                                    var trackHasVerticalBackground = track.HasProviderId("AnimatedMusic.VerticalBackground");
+                                    var trackHasAnimatedCover = bool.TryParse(track.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var trackCover) && trackCover;
+                                    var trackHasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var trackBg) && trackBg;
 
                                     _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Cover: {TrackCover}, Background: {TrackBg})",
                                         track.Name, trackHasAnimatedCover, trackHasVerticalBackground);
