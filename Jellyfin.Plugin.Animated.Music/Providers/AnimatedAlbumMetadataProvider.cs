@@ -21,6 +21,10 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
         // Hardcoded configuration values
         private static readonly string[] SupportedAnimatedFormats = { ".gif", ".mp4", ".webm", ".mov", ".avi" };
 
+        // Provider-specific metadata keys
+        private const string AnimatedCoverKey = "AnimatedMusic.AnimatedCover";
+        private const string VerticalBackgroundKey = "AnimatedMusic.VerticalBackground";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimatedAlbumMetadataProvider"/> class.
         /// </summary>
@@ -64,44 +68,88 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
 
                 // Find album-level animated cover
                 var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
-                var currentAnimatedCover = item.GetProviderId("AnimatedCover");
+                var currentAnimatedCover = item.GetProviderId(AnimatedCoverKey);
 
+                // Validate and update animated cover
                 if (!string.IsNullOrEmpty(animatedCoverPath))
                 {
-                    if (currentAnimatedCover != animatedCoverPath)
+                    if (IsValidAnimatedFile(animatedCoverPath))
                     {
-                        item.SetProviderId("AnimatedCover", animatedCoverPath);
-                        hasChanges = true;
-                        _logger.LogDebug("Updated animated cover for album {AlbumName}: {CoverPath}", item.Name, animatedCoverPath);
+                        if (currentAnimatedCover != animatedCoverPath)
+                        {
+                            item.SetProviderId(AnimatedCoverKey, animatedCoverPath);
+                            hasChanges = true;
+                            _logger.LogDebug("Updated animated cover for album {AlbumName}: {CoverPath}", item.Name, animatedCoverPath);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Found animated cover file but it's invalid: {CoverPath}", animatedCoverPath);
+                        if (!string.IsNullOrEmpty(currentAnimatedCover))
+                        {
+                            item.SetProviderId(AnimatedCoverKey, string.Empty);
+                            hasChanges = true;
+                            _logger.LogDebug("Removed invalid animated cover reference for album {AlbumName}", item.Name);
+                        }
                     }
                 }
                 else if (!string.IsNullOrEmpty(currentAnimatedCover))
                 {
                     // Remove outdated animated cover reference
-                    item.SetProviderId("AnimatedCover", string.Empty);
+                    item.SetProviderId(AnimatedCoverKey, string.Empty);
                     hasChanges = true;
                     _logger.LogDebug("Removed outdated animated cover for album {AlbumName}", item.Name);
                 }
 
+                // Clean up invalid existing references
+                if (!string.IsNullOrEmpty(currentAnimatedCover) && !IsValidAnimatedFile(currentAnimatedCover))
+                {
+                    item.SetProviderId(AnimatedCoverKey, string.Empty);
+                    hasChanges = true;
+                    _logger.LogDebug("Removed invalid animated cover reference for album {AlbumName}", item.Name);
+                }
+
                 // Find album-level vertical background
                 var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
-                var currentVerticalBackground = item.GetProviderId("VerticalBackground");
+                var currentVerticalBackground = item.GetProviderId(VerticalBackgroundKey);
 
+                // Validate and update vertical background
                 if (!string.IsNullOrEmpty(verticalBackgroundPath))
                 {
-                    if (currentVerticalBackground != verticalBackgroundPath)
+                    if (IsValidAnimatedFile(verticalBackgroundPath))
                     {
-                        item.SetProviderId("VerticalBackground", verticalBackgroundPath);
-                        hasChanges = true;
-                        _logger.LogDebug("Updated vertical background for album {AlbumName}: {BackgroundPath}", item.Name, verticalBackgroundPath);
+                        if (currentVerticalBackground != verticalBackgroundPath)
+                        {
+                            item.SetProviderId(VerticalBackgroundKey, verticalBackgroundPath);
+                            hasChanges = true;
+                            _logger.LogDebug("Updated vertical background for album {AlbumName}: {BackgroundPath}", item.Name, verticalBackgroundPath);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Found vertical background file but it's invalid: {BackgroundPath}", verticalBackgroundPath);
+                        if (!string.IsNullOrEmpty(currentVerticalBackground))
+                        {
+                            item.SetProviderId(VerticalBackgroundKey, string.Empty);
+                            hasChanges = true;
+                            _logger.LogDebug("Removed invalid vertical background reference for album {AlbumName}", item.Name);
+                        }
                     }
                 }
                 else if (!string.IsNullOrEmpty(currentVerticalBackground))
                 {
                     // Remove outdated vertical background reference
-                    item.SetProviderId("VerticalBackground", string.Empty);
+                    item.SetProviderId(VerticalBackgroundKey, string.Empty);
                     hasChanges = true;
                     _logger.LogDebug("Removed outdated vertical background for album {AlbumName}", item.Name);
+                }
+
+                // Clean up invalid existing references
+                if (!string.IsNullOrEmpty(currentVerticalBackground) && !IsValidAnimatedFile(currentVerticalBackground))
+                {
+                    item.SetProviderId(VerticalBackgroundKey, string.Empty);
+                    hasChanges = true;
+                    _logger.LogDebug("Removed invalid vertical background reference for album {AlbumName}", item.Name);
                 }
 
                 // Only return MetadataEdit if we actually made changes
@@ -123,6 +171,18 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                 _logger.LogError(ex, "Error fetching animated metadata for album {AlbumId}: {AlbumName}", item.Id, item.Name);
                 return Task.FromResult(ItemUpdateType.None);
             }
+        }
+
+        /// <summary>
+        /// Validates if a file path points to a valid animated file.
+        /// </summary>
+        /// <param name="filePath">The file path to validate.</param>
+        /// <returns>True if the file is a valid animated file; otherwise, false.</returns>
+        private bool IsValidAnimatedFile(string filePath)
+        {
+            return !string.IsNullOrEmpty(filePath) &&
+                   File.Exists(filePath) &&
+                   IsAnimatedFile(Path.GetFileName(filePath));
         }
 
         /// <summary>

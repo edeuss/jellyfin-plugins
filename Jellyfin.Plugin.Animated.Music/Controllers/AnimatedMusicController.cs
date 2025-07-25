@@ -188,11 +188,11 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 {
                     TrackId = trackId,
                     TrackName = track.Name,
-                    HasAnimatedCover = track.HasProviderId("AnimatedCover"),
-                    HasVerticalBackground = track.HasProviderId("VerticalBackground"),
-                    HasTrackSpecificVerticalBackground = bool.TryParse(track.GetProviderId("HasTrackSpecificVerticalBackground"), out var hasTrackSpecific) && hasTrackSpecific,
-                    AnimatedCover = track.GetProviderId("AnimatedCover"),
-                    VerticalBackground = track.GetProviderId("VerticalBackground"),
+                    HasAnimatedCover = track.HasProviderId("AnimatedMusic.AnimatedCover"),
+                    HasVerticalBackground = track.HasProviderId("AnimatedMusic.VerticalBackground"),
+                    HasTrackSpecificVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasTrackSpecificVerticalBackground"), out var hasTrackSpecific) && hasTrackSpecific,
+                    AnimatedCover = track.GetProviderId("AnimatedMusic.AnimatedCover"),
+                    VerticalBackground = track.GetProviderId("AnimatedMusic.VerticalBackground"),
                     LastMetadataRefresh = track.DateLastRefreshed
                 };
 
@@ -216,10 +216,10 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 {
                     AlbumId = albumId,
                     AlbumName = album.Name,
-                    HasAnimatedCover = album.HasProviderId("AnimatedCover"),
-                    HasVerticalBackground = album.HasProviderId("VerticalBackground"),
-                    AnimatedCover = album.GetProviderId("AnimatedCover"),
-                    VerticalBackground = album.GetProviderId("VerticalBackground"),
+                    HasAnimatedCover = album.HasProviderId("AnimatedMusic.AnimatedCover"),
+                    HasVerticalBackground = album.HasProviderId("AnimatedMusic.VerticalBackground"),
+                    AnimatedCover = album.GetProviderId("AnimatedMusic.AnimatedCover"),
+                    VerticalBackground = album.GetProviderId("AnimatedMusic.VerticalBackground"),
                     LastMetadataRefresh = album.DateLastRefreshed
                 };
 
