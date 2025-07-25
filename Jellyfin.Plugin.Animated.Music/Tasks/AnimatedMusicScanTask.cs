@@ -210,6 +210,9 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                         ReplaceAllImages = false
                                     }, cancellationToken);
 
+                                    // Force save the album to ensure provider IDs are persisted
+                                    await _libraryManager.UpdateItemAsync(album, album, ItemUpdateType.MetadataDownload, cancellationToken);
+
                                     // Verify album metadata was updated
                                     var albumHasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var albumCover) && albumCover;
                                     _logger.LogInformation("Completed album metadata refresh - Album: {AlbumName} (Cover: {AlbumCover})",
@@ -247,9 +250,11 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                     // Check if this specific track has vertical background before refreshing
                                     var hasTrackVerticalBackground = HasTrackSpecificVerticalBackground(trackFolderPath, trackFileName);
 
-                                    if (hasTrackVerticalBackground)
+                                    // Refresh track metadata if it has vertical background OR if album has animated cover
+                                    if (hasTrackVerticalBackground || hasAlbumAnimatedCover)
                                     {
-                                        _logger.LogInformation("Track {TrackName} has vertical background, refreshing metadata", track.Name);
+                                        var refreshReason = hasTrackVerticalBackground ? "vertical background" : "album animated cover";
+                                        _logger.LogInformation("Track {TrackName} has {RefreshReason}, refreshing metadata", track.Name, refreshReason);
 
                                         // Force metadata refresh for this specific track
                                         await track.RefreshMetadata(new MetadataRefreshOptions(new DirectoryService(_fileSystem))
@@ -261,15 +266,19 @@ namespace Jellyfin.Plugin.Animated.Music.Tasks
                                             ReplaceAllImages = false
                                         }, cancellationToken);
 
+                                        // Force save the track to ensure provider IDs are persisted
+                                        await _libraryManager.UpdateItemAsync(track, track, ItemUpdateType.MetadataDownload, cancellationToken);
+
                                         // Verify that the provider was called by checking if provider IDs were set
                                         var trackHasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var trackBg) && trackBg;
+                                        var trackHasAnimatedCover = bool.TryParse(track.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var trackCover) && trackCover;
 
-                                        _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Background: {TrackBg})",
-                                            track.Name, trackHasVerticalBackground);
+                                        _logger.LogInformation("Completed track metadata refresh - Track: {TrackName} (Background: {TrackBg}, Cover: {TrackCover})",
+                                            track.Name, trackHasVerticalBackground, trackHasAnimatedCover);
                                     }
                                     else
                                     {
-                                        _logger.LogDebug("Track {TrackName} has no vertical background, skipping metadata refresh", track.Name);
+                                        _logger.LogDebug("Track {TrackName} has no vertical background and album has no animated cover, skipping metadata refresh", track.Name);
                                     }
                                 }
                                 catch (Exception ex)
