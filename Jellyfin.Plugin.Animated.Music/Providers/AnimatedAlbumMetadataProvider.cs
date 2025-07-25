@@ -88,10 +88,10 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                     _logger.LogDebug("Updated vertical background flag for album {AlbumName}: {HasBackground}", item.Name, hasVerticalBackground);
                 }
 
-                // Only return MetadataEdit if we actually made changes
+                // Only return MetadataDownload if we actually made changes
                 if (hasChanges)
                 {
-                    updateType = ItemUpdateType.MetadataEdit;
+                    updateType = ItemUpdateType.MetadataDownload;
                     _logger.LogInformation("Updated animated metadata flags for album {AlbumName} - HasCover: {HasCover}, HasBackground: {HasBackground}",
                         item.Name, hasAnimatedCover, hasVerticalBackground);
                 }

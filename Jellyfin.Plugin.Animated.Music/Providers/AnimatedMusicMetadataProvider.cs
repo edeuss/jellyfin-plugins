@@ -95,7 +95,7 @@ namespace Jellyfin.Plugin.Animated.Music.Providers
                 // Only return MetadataEdit if we actually made changes
                 if (hasChanges)
                 {
-                    updateType = ItemUpdateType.MetadataEdit;
+                    updateType = ItemUpdateType.MetadataDownload;
                     _logger.LogInformation("Updated animated metadata flags for track {TrackName} - HasCover: {HasCover}, HasBackground: {HasBackground}, IsTrackSpecific: {IsTrackSpecific}",
                         item.Name, hasAnimatedCover, hasVerticalBackground, isTrackSpecific);
                 }
