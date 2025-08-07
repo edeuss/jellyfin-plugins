@@ -172,57 +172,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             });
         }
 
-        /// <summary>
-        /// Gets animated metadata stored in track properties.
-        /// </summary>
-        /// <param name="trackId">The track ID.</param>
-        /// <returns>Animated metadata information.</returns>
-        [HttpGet("Track/{trackId}/Metadata")]
-        public IActionResult GetTrackAnimatedMetadata(string trackId)
-        {
-            return ExecuteWithErrorHandling(trackId, "animated metadata for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-
-                var metadata = new
-                {
-                    TrackId = trackId,
-                    TrackName = track.Name,
-                    HasAnimatedCover = bool.TryParse(track.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var hasCover) && hasCover,
-                    HasVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var hasBackground) && hasBackground,
-                    HasTrackSpecificVerticalBackground = bool.TryParse(track.GetProviderId("AnimatedMusic.HasTrackSpecificVerticalBackground"), out var hasTrackSpecific) && hasTrackSpecific,
-                    LastMetadataRefresh = track.DateLastRefreshed
-                };
-
-                return Ok(metadata);
-            });
-        }
-
-        /// <summary>
-        /// Gets animated metadata stored in album properties.
-        /// </summary>
-        /// <param name="albumId">The album ID.</param>
-        /// <returns>Animated metadata information.</returns>
-        [HttpGet("Album/{albumId}/Metadata")]
-        public IActionResult GetAlbumAnimatedMetadata(string albumId)
-        {
-            return ExecuteWithErrorHandling(albumId, "animated metadata for album", () =>
-            {
-                var album = GetValidatedAlbum(albumId);
-
-                var metadata = new
-                {
-                    AlbumId = albumId,
-                    AlbumName = album.Name,
-                    HasAnimatedCover = bool.TryParse(album.GetProviderId("AnimatedMusic.HasAnimatedCover"), out var hasCover) && hasCover,
-                    HasVerticalBackground = bool.TryParse(album.GetProviderId("AnimatedMusic.HasVerticalBackground"), out var hasBackground) && hasBackground,
-                    LastMetadataRefresh = album.DateLastRefreshed
-                };
-
-                return Ok(metadata);
-            });
-        }
-
         // Private helper methods to reduce duplication
 
         private IActionResult ExecuteWithErrorHandling(string id, string operation, Func<IActionResult> action)

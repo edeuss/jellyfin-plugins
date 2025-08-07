@@ -1,14 +1,9 @@
 using System;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
-using MediaBrowser.Controller.Entities.Audio;
-using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
-using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Jellyfin.Plugin.Animated.Music.Providers;
-using Jellyfin.Plugin.Animated.Music.Tasks;
 
 namespace Jellyfin.Plugin.Animated.Music
 {
@@ -45,12 +40,7 @@ namespace Jellyfin.Plugin.Animated.Music
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddTransient<IScheduledTask, AnimatedMusicScanTask>();
-            serviceCollection.AddSingleton<IMetadataProvider<MusicAlbum>, AnimatedAlbumMetadataProvider>();
-            serviceCollection.AddSingleton<IMetadataProvider<Audio>, AnimatedMusicMetadataProvider>();
-
-            // Log registration for debugging
-            System.Diagnostics.Debug.WriteLine("AnimatedMusicPlugin: Registered providers and scheduled task");
+            //None
         }
     }
 
