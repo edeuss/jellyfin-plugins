@@ -20,6 +20,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
         // Hardcoded configuration values
         private static readonly string[] SupportedAnimatedFormats = { ".gif", ".mp4", ".webm", ".mov", ".avi" };
+        private static readonly string[] SupportedImageFormats = { ".jpg", ".jpeg", ".png", ".webp" };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimatedMusicController"/> class.
@@ -45,6 +46,54 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 var album = GetValidatedAlbum(albumId);
                 var filePath = FindAnimatedFile(album.ContainingFolderPath, "cover-animated");
                 return ServeAnimatedFile(filePath, $"animated cover for album {albumId}");
+            });
+        }
+
+        /// <summary>
+        /// Gets the animated cover preview (first frame) for a music album.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <returns>The animated cover preview image.</returns>
+        [HttpGet("Album/{albumId}/AnimatedCoverPreview")]
+        public IActionResult GetAnimatedCoverPreview(string albumId)
+        {
+            return ExecuteWithErrorHandling(albumId, "animated cover preview for album", () =>
+            {
+                var album = GetValidatedAlbum(albumId);
+                var filePath = FindImageFile(album.ContainingFolderPath, "cover-animated-preview");
+                return ServeImageFile(filePath, $"animated cover preview for album {albumId}");
+            });
+        }
+
+        /// <summary>
+        /// Gets the tall animated cover for a music album.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <returns>The tall animated cover file.</returns>
+        [HttpGet("Album/{albumId}/AnimatedCoverTall")]
+        public IActionResult GetAnimatedCoverTall(string albumId)
+        {
+            return ExecuteWithErrorHandling(albumId, "tall animated cover for album", () =>
+            {
+                var album = GetValidatedAlbum(albumId);
+                var filePath = FindAnimatedFile(album.ContainingFolderPath, "cover-animated-tall");
+                return ServeAnimatedFile(filePath, $"tall animated cover for album {albumId}");
+            });
+        }
+
+        /// <summary>
+        /// Gets the tall animated cover preview (first frame) for a music album.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <returns>The tall animated cover preview image.</returns>
+        [HttpGet("Album/{albumId}/AnimatedCoverTallPreview")]
+        public IActionResult GetAnimatedCoverTallPreview(string albumId)
+        {
+            return ExecuteWithErrorHandling(albumId, "tall animated cover preview for album", () =>
+            {
+                var album = GetValidatedAlbum(albumId);
+                var filePath = FindImageFile(album.ContainingFolderPath, "cover-animated-tall-preview");
+                return ServeImageFile(filePath, $"tall animated cover preview for album {albumId}");
             });
         }
 
@@ -97,6 +146,54 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         }
 
         /// <summary>
+        /// Gets the animated cover preview for the album containing the specified track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The animated cover preview image for the track's album.</returns>
+        [HttpGet("Track/{trackId}/AnimatedCoverPreview")]
+        public IActionResult GetTrackAnimatedCoverPreview(string trackId)
+        {
+            return ExecuteWithErrorHandling(trackId, "animated cover preview for track", () =>
+            {
+                var track = GetValidatedTrack(trackId);
+                var filePath = FindTrackAnimatedCoverPreview(track);
+                return ServeImageFile(filePath, $"animated cover preview for track {trackId}");
+            });
+        }
+
+        /// <summary>
+        /// Gets the tall animated cover for the album containing the specified track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The tall animated cover file for the track's album.</returns>
+        [HttpGet("Track/{trackId}/AnimatedCoverTall")]
+        public IActionResult GetTrackAnimatedCoverTall(string trackId)
+        {
+            return ExecuteWithErrorHandling(trackId, "tall animated cover for track", () =>
+            {
+                var track = GetValidatedTrack(trackId);
+                var filePath = FindTrackAnimatedCoverTall(track);
+                return ServeAnimatedFile(filePath, $"tall animated cover for track {trackId}");
+            });
+        }
+
+        /// <summary>
+        /// Gets the tall animated cover preview for the album containing the specified track.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The tall animated cover preview image for the track's album.</returns>
+        [HttpGet("Track/{trackId}/AnimatedCoverTallPreview")]
+        public IActionResult GetTrackAnimatedCoverTallPreview(string trackId)
+        {
+            return ExecuteWithErrorHandling(trackId, "tall animated cover preview for track", () =>
+            {
+                var track = GetValidatedTrack(trackId);
+                var filePath = FindTrackAnimatedCoverTallPreview(track);
+                return ServeImageFile(filePath, $"tall animated cover preview for track {trackId}");
+            });
+        }
+
+        /// <summary>
         /// Gets information about animated files for a music album.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
@@ -110,14 +207,23 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 var albumPath = album.ContainingFolderPath;
 
                 var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
+                var animatedCoverPreviewPath = FindImageFile(albumPath, "cover-animated-preview");
+                var animatedCoverTallPath = FindAnimatedFile(albumPath, "cover-animated-tall");
+                var animatedCoverTallPreviewPath = FindImageFile(albumPath, "cover-animated-tall-preview");
                 var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
 
                 var info = new
                 {
                     AlbumId = albumId,
                     HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
+                    HasAnimatedCoverPreview = !string.IsNullOrEmpty(animatedCoverPreviewPath),
+                    HasAnimatedCoverTall = !string.IsNullOrEmpty(animatedCoverTallPath),
+                    HasAnimatedCoverTallPreview = !string.IsNullOrEmpty(animatedCoverTallPreviewPath),
                     HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
                     AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCover" : null,
+                    AnimatedCoverPreviewUrl = !string.IsNullOrEmpty(animatedCoverPreviewPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverPreview" : null,
+                    AnimatedCoverTallUrl = !string.IsNullOrEmpty(animatedCoverTallPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverTall" : null,
+                    AnimatedCoverTallPreviewUrl = !string.IsNullOrEmpty(animatedCoverTallPreviewPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverTallPreview" : null,
                     VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Album/{albumId}/VerticalBackground" : null
                 };
 
@@ -156,15 +262,24 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                 var verticalBackgroundPath = trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
                 var animatedCoverPath = !string.IsNullOrEmpty(albumPath) ? FindAnimatedFile(albumPath, "cover-animated") : null;
+                var animatedCoverPreviewPath = !string.IsNullOrEmpty(albumPath) ? FindImageFile(albumPath, "cover-animated-preview") : null;
+                var animatedCoverTallPath = !string.IsNullOrEmpty(albumPath) ? FindAnimatedFile(albumPath, "cover-animated-tall") : null;
+                var animatedCoverTallPreviewPath = !string.IsNullOrEmpty(albumPath) ? FindImageFile(albumPath, "cover-animated-tall-preview") : null;
 
                 var info = new
                 {
                     TrackId = trackId,
                     TrackFileName = trackFileName,
                     HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
+                    HasAnimatedCoverPreview = !string.IsNullOrEmpty(animatedCoverPreviewPath),
+                    HasAnimatedCoverTall = !string.IsNullOrEmpty(animatedCoverTallPath),
+                    HasAnimatedCoverTallPreview = !string.IsNullOrEmpty(animatedCoverTallPreviewPath),
                     HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
                     HasTrackSpecificVerticalBackground = !string.IsNullOrEmpty(trackVerticalBackgroundPath),
                     AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCover" : null,
+                    AnimatedCoverPreviewUrl = !string.IsNullOrEmpty(animatedCoverPreviewPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverPreview" : null,
+                    AnimatedCoverTallUrl = !string.IsNullOrEmpty(animatedCoverTallPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverTall" : null,
+                    AnimatedCoverTallPreviewUrl = !string.IsNullOrEmpty(animatedCoverTallPreviewPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverTallPreview" : null,
                     VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Track/{trackId}/VerticalBackground" : null
                 };
 
@@ -254,6 +369,84 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             return trackAnimatedCoverPath ?? albumAnimatedCoverPath;
         }
 
+        private string FindTrackAnimatedCoverPreview(Audio track)
+        {
+            var folderPath = Path.GetDirectoryName(track.Path);
+            var fileName = Path.GetFileName(track.Path);
+
+            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Track path not found");
+            }
+
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
+            var trackAnimatedCoverPreviewPattern = $"cover-animated-preview-{trackFileName}";
+
+            // Check for track-specific animated cover preview first
+            var trackAnimatedCoverPreviewPath = FindImageFile(folderPath, trackAnimatedCoverPreviewPattern);
+
+            // Fall back to album-level animated cover preview if no track-specific one found
+            var albumAnimatedCoverPreviewPath = string.IsNullOrEmpty(trackAnimatedCoverPreviewPath) && !string.IsNullOrEmpty(albumPath)
+                ? FindImageFile(albumPath, "cover-animated-preview")
+                : null;
+
+            return trackAnimatedCoverPreviewPath ?? albumAnimatedCoverPreviewPath;
+        }
+
+        private string FindTrackAnimatedCoverTall(Audio track)
+        {
+            var folderPath = Path.GetDirectoryName(track.Path);
+            var fileName = Path.GetFileName(track.Path);
+
+            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Track path not found");
+            }
+
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
+            var trackAnimatedCoverTallPattern = $"cover-animated-tall-{trackFileName}";
+
+            // Check for track-specific tall animated cover first
+            var trackAnimatedCoverTallPath = FindAnimatedFile(folderPath, trackAnimatedCoverTallPattern);
+
+            // Fall back to album-level tall animated cover if no track-specific one found
+            var albumAnimatedCoverTallPath = string.IsNullOrEmpty(trackAnimatedCoverTallPath) && !string.IsNullOrEmpty(albumPath)
+                ? FindAnimatedFile(albumPath, "cover-animated-tall")
+                : null;
+
+            return trackAnimatedCoverTallPath ?? albumAnimatedCoverTallPath;
+        }
+
+        private string FindTrackAnimatedCoverTallPreview(Audio track)
+        {
+            var folderPath = Path.GetDirectoryName(track.Path);
+            var fileName = Path.GetFileName(track.Path);
+
+            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Track path not found");
+            }
+
+            var album = track.AlbumEntity;
+            var albumPath = album?.ContainingFolderPath;
+            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
+            var trackAnimatedCoverTallPreviewPattern = $"cover-animated-tall-preview-{trackFileName}";
+
+            // Check for track-specific tall animated cover preview first
+            var trackAnimatedCoverTallPreviewPath = FindImageFile(folderPath, trackAnimatedCoverTallPreviewPattern);
+
+            // Fall back to album-level tall animated cover preview if no track-specific one found
+            var albumAnimatedCoverTallPreviewPath = string.IsNullOrEmpty(trackAnimatedCoverTallPreviewPath) && !string.IsNullOrEmpty(albumPath)
+                ? FindImageFile(albumPath, "cover-animated-tall-preview")
+                : null;
+
+            return trackAnimatedCoverTallPreviewPath ?? albumAnimatedCoverTallPreviewPath;
+        }
+
         private string FindTrackVerticalBackground(Audio track)
         {
             var folderPath = Path.GetDirectoryName(track.Path);
@@ -298,6 +491,27 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             return File(stream, contentType);
         }
 
+        private IActionResult ServeImageFile(string filePath, string logContext)
+        {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return NotFound("Image file not found");
+            }
+
+            var fileInfo = new FileInfo(filePath);
+            if (!fileInfo.Exists)
+            {
+                return NotFound("Image file not found");
+            }
+
+            var contentType = GetImageContentType(fileInfo.Extension);
+            var stream = System.IO.File.OpenRead(filePath);
+
+            _logger.LogDebug("Serving {LogContext}: {FilePath}", logContext, filePath);
+
+            return File(stream, contentType);
+        }
+
         private string FindAnimatedFile(string albumPath, string fileNamePattern)
         {
             if (string.IsNullOrEmpty(albumPath) || !Directory.Exists(albumPath))
@@ -316,6 +530,43 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
                         if (nameWithoutExtension.Equals(fileNamePattern, StringComparison.OrdinalIgnoreCase) &&
                             IsAnimatedFile(fileInfo.Name))
+                        {
+                            return file;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Error checking file: {FilePath}", file);
+                        continue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Error scanning directory: {AlbumPath}", albumPath);
+            }
+
+            return null;
+        }
+
+        private string FindImageFile(string albumPath, string fileNamePattern)
+        {
+            if (string.IsNullOrEmpty(albumPath) || !Directory.Exists(albumPath))
+            {
+                return null;
+            }
+
+            try
+            {
+                foreach (var file in Directory.GetFiles(albumPath))
+                {
+                    try
+                    {
+                        var fileInfo = new FileInfo(file);
+                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
+
+                        if (nameWithoutExtension.Equals(fileNamePattern, StringComparison.OrdinalIgnoreCase) &&
+                            IsImageFile(fileInfo.Name))
                         {
                             return file;
                         }
@@ -354,6 +605,25 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             }
         }
 
+        private bool IsImageFile(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return false;
+            }
+
+            try
+            {
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                return Array.Exists(SupportedImageFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Error checking file extension for: {FileName}", fileName);
+                return false;
+            }
+        }
+
         private string GetContentType(string extension)
         {
             return extension.ToLowerInvariant() switch
@@ -363,6 +633,18 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 ".webm" => "video/webm",
                 ".mov" => "video/quicktime",
                 ".avi" => "video/x-msvideo",
+                _ => "application/octet-stream"
+            };
+        }
+
+        private string GetImageContentType(string extension)
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
                 _ => "application/octet-stream"
             };
         }
