@@ -8,100 +8,12 @@
     "category": "Metadata",
     "versions": [
       {
-        "version": "1.7.14",
+        "version": "1.8.0",
         "changelog": "Fix logic.",
         "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.14/Jellyfin.Plugin.Animated.Music_1.7.14.zip",
-        "checksum": "571b0cf9bea3928b8560c3daf72cf6b8",
-        "timestamp": "2025-07-25T15:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.13",
-        "changelog": "Fix logic.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.13/Jellyfin.Plugin.Animated.Music_1.7.13.zip",
-        "checksum": "6595a8cbf5bc71264e44a829f3cf9378",
-        "timestamp": "2025-07-25T15:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.12",
-        "changelog": "Fix logic.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.12/Jellyfin.Plugin.Animated.Music_1.7.12.zip",
-        "checksum": "b8fca25aa2eb8d46b93c9ec28aca5f8e",
-        "timestamp": "2025-07-25T15:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.11",
-        "changelog": "Switch to using boolean value.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.11/Jellyfin.Plugin.Animated.Music_1.7.11.zip",
-        "checksum": "cdcefa945f846fe21eed22f3b0b04635",
-        "timestamp": "2025-07-25T15:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.10",
-        "changelog": "Update provider id names.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.10/Jellyfin.Plugin.Animated.Music_1.7.10.zip",
-        "checksum": "bdc2c1340c6a31851cae9349166d7633",
-        "timestamp": "2025-07-25T10:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.9",
-        "changelog": "Update provider id names.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.9/Jellyfin.Plugin.Animated.Music_1.7.9.zip",
-        "checksum": "ad1c63d9cb7e0ca3a70838cb26b72673",
-        "timestamp": "2025-07-25T10:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.8",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.8/Jellyfin.Plugin.Animated.Music_1.7.8.zip",
-        "checksum": "2eadfb46ca3b90c0265f3cd68dbd4fb8",
-        "timestamp": "2025-07-24T19:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.7",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.7/Jellyfin.Plugin.Animated.Music_1.7.7.zip",
-        "checksum": "3daf6b346b0fa51284daf398b4845710",
-        "timestamp": "2025-07-24T18:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.6",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.6/Jellyfin.Plugin.Animated.Music_1.7.6.zip",
-        "checksum": "37925e28b7f5c603ee34fac74affe34c",
-        "timestamp": "2025-07-24T18:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.5",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.5/Jellyfin.Plugin.Animated.Music_1.7.5.zip",
-        "checksum": "03eae55b3f8440889be1c32fea31d8e4",
-        "timestamp": "2025-07-24T18:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.4",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.4/Jellyfin.Plugin.Animated.Music_1.7.4.zip",
-        "checksum": "89e39267a7e91d900df051c801b3dc7c",
-        "timestamp": "2025-07-24T17:03:00.0000000Z"
-      },
-      {
-        "version": "1.7.3",
-        "changelog": "Small bug fixes.",
-        "targetAbi": "10.10.0.0",
-        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.7.3/Jellyfin.Plugin.Animated.Music_1.7.3.zip",
-        "checksum": "db2cb10326a00d1abf685d918b26f8ff",
-        "timestamp": "2025-07-24T16:03:00.0000000Z"
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.8.0/Jellyfin.Plugin.Animated.Music_1.8.0.zip",
+        "checksum": "5d7856f2ad3bd77b3510bcbbfa98708c",
+        "timestamp": "2025-08-08T15:03:00.0000000Z"
       }
     ]
   }
