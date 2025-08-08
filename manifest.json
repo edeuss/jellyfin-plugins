@@ -9,7 +9,7 @@
     "versions": [
       {
         "version": "1.8.0",
-        "changelog": "Fix logic.",
+        "changelog": "Add support for tall animated covers.",
         "targetAbi": "10.10.0.0",
         "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/1.8.0/Jellyfin.Plugin.Animated.Music_1.8.0.zip",
         "checksum": "5d7856f2ad3bd77b3510bcbbfa98708c",
