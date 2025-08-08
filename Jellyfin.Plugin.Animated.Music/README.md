@@ -69,6 +69,16 @@ Music/
 - **Tall Animated Cover Previews**: `.jpg`, `.jpeg`, `.png`, `.webp`
 - **Vertical Backgrounds**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
 
+## How to find videos
+
+### Animated covers
+
+Apple Music provides animated album covers that can be downloaded as square animated covers using [Ben Dodson's Apple Music Artwork Finder](https://bendodson.com/projects/apple-music-artwork-finder/). Note that this tool only downloads square covers (and no previews), not tall animated covers. A dedicated site for downloading videos and previews with proper file naming is planned for future development.
+
+### Vertical backgrounds
+
+Spotify offers artists vertical background videos called "Canvas" that play behind the music. You can download these videos using a Spotify track link and [canvasdownloader.com](https://www.canvasdownloader.com).
+
 ## API Endpoints
 
 The plugin provides REST API endpoints to access animated files programmatically:
