@@ -287,6 +287,33 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             });
         }
 
+        /// <summary>
+        /// Tests if the Animated Music plugin is installed and available.
+        /// </summary>
+        /// <returns>A simple response indicating the plugin is available.</returns>
+        [HttpGet("Ping")]
+        public IActionResult TestPlugin()
+        {
+            try
+            {
+                var response = new
+                {
+                    PluginName = "Animated Music",
+                    Version = Plugin.Instance.Version.ToString(),
+                    Status = "Available",
+                    Message = "Animated Music plugin is installed and running"
+                };
+
+                _logger.LogDebug("Plugin availability test requested");
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during plugin availability test");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
         // Private helper methods to reduce duplication
 
         private IActionResult ExecuteWithErrorHandling(string id, string operation, Func<IActionResult> action)
