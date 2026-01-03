@@ -73,7 +73,7 @@ Music/
 
 ### Animated covers
 
-Apple Music provides animated album covers that can be downloaded as square animated covers using [Ben Dodson's Apple Music Artwork Finder](https://bendodson.com/projects/apple-music-artwork-finder/). Note that this tool only downloads square covers (and no previews), not tall animated covers. A dedicated site for downloading videos and previews with proper file naming is planned for future development.
+Apple Music provides animated album covers that can be downloaded using the [Animated Music tool](https://deuss.dev/tools/animated-music).
 
 ### Vertical backgrounds
 
