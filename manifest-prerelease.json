@@ -8,6 +8,14 @@
     "category": "Metadata",
     "versions": [
       {
+        "version": "2.0.0.5",
+        "changelog": "Pre-release test build.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/2.0.0.5/Jellyfin.Plugin.Animated.Music_2.0.0.5.zip",
+        "checksum": "78c73d4bee5526886b9adc6e4653c206",
+        "timestamp": "2026-09-15T19:42:13.0000000Z"
+      },
+      {
         "version": "2.0.0.4",
         "changelog": "Pre-release test build.",
         "targetAbi": "12.0.0.0",
