@@ -1,0 +1,20 @@
+[
+  {
+    "guid": "d5861930-8da6-499c-b7dd-235c60703f64",
+    "name": "Animated Music",
+    "description": "Adds animated cover and vertical video background support for music albums through an REST API for clients.",
+    "overview": "This plugin allows you to use animated GIF, MP4, WebM, MOV, and AVI files as album covers and vertical video backgrounds for your music library in supported clients.",
+    "owner": "edeuss",
+    "category": "Metadata",
+    "versions": [
+      {
+        "version": "2.0.0.1",
+        "changelog": "Pre-release test build.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/edeuss/jellyfin-plugins/releases/download/2.0.0.1/Jellyfin.Plugin.Animated.Music_2.0.0.1.zip",
+        "checksum": "77b03546f4458981144962e849453018",
+        "timestamp": "2026-09-15T17:31:06.0000000Z"
+      }
+    ]
+  }
+]
