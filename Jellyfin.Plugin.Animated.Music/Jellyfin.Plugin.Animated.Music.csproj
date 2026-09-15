@@ -27,6 +27,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Web\animated-music.js" />
     <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Configuration\config.js" />
   </ItemGroup>
 
   <ItemGroup>

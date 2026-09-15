@@ -40,6 +40,7 @@ namespace Jellyfin.Plugin.Animated.Music
         /// <inheritdoc />
         public IEnumerable<PluginPageInfo> GetPages()
         {
+            var ns = GetType().Namespace;
             return
             [
                 new PluginPageInfo
@@ -47,7 +48,12 @@ namespace Jellyfin.Plugin.Animated.Music
                     Name = "AnimatedMusicConfigurationPage",
                     DisplayName = "Animated Music",
                     EnableInMainMenu = false,
-                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                    EmbeddedResourcePath = ns + ".Configuration.configPage.html"
+                },
+                new PluginPageInfo
+                {
+                    Name = "animatedMusicConfig.js",
+                    EmbeddedResourcePath = ns + ".Configuration.config.js"
                 }
             ];
         }
