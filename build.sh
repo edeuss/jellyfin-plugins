@@ -56,8 +56,15 @@ echo "Build completed successfully!"
 echo "Plugin files are available in the 'build' directory."
 echo "Plugin package: $ZIP_NAME"
 
-# Calculate and display MD5 checksum
-echo "MD5 checksum: $(md5 -q "$ZIP_NAME")"
+if command -v md5sum >/dev/null 2>&1; then
+  CHECKSUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')
+elif command -v md5 >/dev/null 2>&1; then
+  CHECKSUM=$(md5 -q "$ZIP_NAME")
+else
+  echo "Error: md5sum or md5 is required" >&2
+  exit 1
+fi
+echo "MD5 checksum: $CHECKSUM"
 
 echo ""
 echo "To install the plugin:"

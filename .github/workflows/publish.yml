@@ -1,0 +1,245 @@
+name: Publish plugin
+
+on:
+  workflow_call:
+    inputs:
+      prerelease:
+        type: boolean
+        required: true
+      changelog:
+        type: string
+        required: true
+      version:
+        type: string
+        required: false
+        default: ""
+      suffix:
+        type: string
+        required: false
+        default: ""
+      target_abi:
+        type: string
+        required: false
+        default: "12.0.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PRERELEASE: ${{ inputs.prerelease }}
+      CHANGELOG: ${{ inputs.changelog }}
+      VERSION_INPUT: ${{ inputs.version }}
+      SUFFIX_INPUT: ${{ inputs.suffix }}
+      TARGET_ABI: ${{ inputs.target_abi }}
+      MANIFEST: ${{ inputs.prerelease && 'manifest-prerelease.json' || 'manifest.json' }}
+    steps:
+      - name: Require a branch
+        run: |
+          set -euo pipefail
+          case "${{ github.ref }}" in
+            refs/heads/*) ;;
+            *)
+              echo "Run this workflow from a branch so the catalog can be pushed." >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Attach branch
+        run: git checkout -B "${{ github.ref_name }}"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: meta
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          CSPROJ="Jellyfin.Plugin.Animated.Music/Jellyfin.Plugin.Animated.Music.csproj"
+          BASE_VERSION="$VERSION_INPUT"
+          if [ -z "$BASE_VERSION" ]; then
+            BASE_VERSION=$(grep '<AssemblyVersion>' "$CSPROJ" | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
+          fi
+          if [ -z "$BASE_VERSION" ]; then
+            echo "Could not determine plugin version" >&2
+            exit 1
+          fi
+          if ! [[ "$BASE_VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+            echo "Version '$BASE_VERSION' is not a numeric version Jellyfin can parse" >&2
+            exit 1
+          fi
+
+          VERSION="$BASE_VERSION"
+          if [ "$PRERELEASE" = "true" ]; then
+            SUFFIX="$SUFFIX_INPUT"
+            if [ -z "$SUFFIX" ]; then
+              SUFFIX="$RUN_NUMBER"
+            fi
+            if ! [[ "$SUFFIX" =~ ^[0-9]+$ ]]; then
+              echo "Pre-release suffix must be numeric (Jellyfin catalog versions cannot use labels like -pre). Got: '$SUFFIX'" >&2
+              exit 1
+            fi
+            IFS=. read -r major minor patch extra _ <<< "${BASE_VERSION}."
+            if [ -n "${extra:-}" ]; then
+              VERSION="${major}.${minor}.${patch}.${SUFFIX}"
+            else
+              VERSION="${BASE_VERSION}.${SUFFIX}"
+            fi
+          fi
+
+          ZIP_NAME="Jellyfin.Plugin.Animated.Music_${VERSION}.zip"
+
+          {
+            echo "base_version=$BASE_VERSION"
+            echo "version=$VERSION"
+            echo "zip_name=$ZIP_NAME"
+            echo "tag=$VERSION"
+            echo "branch=$BRANCH"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing $VERSION"
+
+      - name: Guard existing tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release/tag '$TAG' already exists. Bump the version or suffix and re-run." >&2
+            exit 1
+          fi
+
+      - name: Build
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          dotnet restore
+          dotnet build Jellyfin.Plugin.Animated.Music/Jellyfin.Plugin.Animated.Music.csproj \
+            --configuration Release \
+            --no-restore \
+            -p:AssemblyVersion="$VERSION" \
+            -p:FileVersion="$VERSION" \
+            -p:InformationalVersion="$VERSION"
+
+      - name: Package zip
+        id: package
+        run: |
+          set -euo pipefail
+          ZIP_NAME="${{ steps.meta.outputs.zip_name }}"
+          rm -rf build
+          mkdir -p build
+          cp -r Jellyfin.Plugin.Animated.Music/bin/Release/net10.0/. build/
+          find build -name '._*' -delete
+          find build -name '.DS_Store' -delete
+          (cd build && zip -r "../$ZIP_NAME" . -x "*.DS_Store" "*._*" "__MACOSX/*")
+          CHECKSUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+          echo "checksum=$CHECKSUM"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          ZIP_NAME: ${{ steps.meta.outputs.zip_name }}
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [ "$PRERELEASE" = "true" ]; then
+            EXTRA+=(--prerelease)
+          fi
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "$CHANGELOG" \
+            --target "${{ github.sha }}" \
+            "${EXTRA[@]}" \
+            "$ZIP_NAME"
+
+      - name: Update catalog
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          ZIP_NAME: ${{ steps.meta.outputs.zip_name }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.0000000Z")
+          SOURCE_URL="https://github.com/${REPO}/releases/download/${TAG}/${ZIP_NAME}"
+
+          if [ ! -f "$MANIFEST" ]; then
+            jq -n --slurpfile src manifest.json '[$src[0][0] | .versions = []]' > "$MANIFEST"
+          fi
+
+          jq --indent 2 \
+            --arg version "$VERSION" \
+            --arg changelog "$CHANGELOG" \
+            --arg targetAbi "$TARGET_ABI" \
+            --arg sourceUrl "$SOURCE_URL" \
+            --arg checksum "$CHECKSUM" \
+            --arg timestamp "$TIMESTAMP" \
+            '
+            .[0].versions |= (
+              [{
+                version: $version,
+                changelog: $changelog,
+                targetAbi: $targetAbi,
+                sourceUrl: $sourceUrl,
+                checksum: $checksum,
+                timestamp: $timestamp
+              }] + map(select(.version != $version))
+            )
+            ' "$MANIFEST" > "${MANIFEST}.tmp"
+          mv "${MANIFEST}.tmp" "$MANIFEST"
+
+      - name: Commit catalog
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          BRANCH: ${{ steps.meta.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$MANIFEST"
+          if git diff --cached --quiet; then
+            echo "No catalog changes"
+            exit 0
+          fi
+          git commit -m "Publish ${TAG} to ${MANIFEST}"
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          ZIP_NAME: ${{ steps.meta.outputs.zip_name }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ steps.meta.outputs.branch }}
+        run: |
+          {
+            if [ "$PRERELEASE" = "true" ]; then
+              echo "## Pre-release ${TAG}"
+            else
+              echo "## Release ${TAG}"
+            fi
+            echo ""
+            echo "- Zip: \`${ZIP_NAME}\`"
+            echo "- Checksum: \`${CHECKSUM}\`"
+            echo "- Release: https://github.com/${REPO}/releases/tag/${TAG}"
+            echo "- Catalog: \`https://raw.githubusercontent.com/${REPO}/refs/heads/${BRANCH}/${MANIFEST}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

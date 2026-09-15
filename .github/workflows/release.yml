@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: Changelog shown in GitHub and the plugin catalog
+        required: true
+        type: string
+      version:
+        description: Plugin version (defaults to AssemblyVersion in the csproj)
+        required: false
+        type: string
+      target_abi:
+        description: Jellyfin target ABI written to the catalog
+        required: false
+        type: string
+        default: "12.0.0.0"
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      prerelease: false
+      changelog: ${{ inputs.changelog }}
+      version: ${{ inputs.version || '' }}
+      target_abi: ${{ inputs.target_abi || '12.0.0.0' }}

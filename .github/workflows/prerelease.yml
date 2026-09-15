@@ -1,0 +1,42 @@
+name: Pre-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: Notes for the GitHub pre-release
+        required: false
+        type: string
+        default: Pre-release test build.
+      version:
+        description: Base plugin version (defaults to AssemblyVersion in the csproj)
+        required: false
+        type: string
+      suffix:
+        description: Numeric 4th version part (defaults to the run number). Jellyfin cannot parse -pre labels.
+        required: false
+        type: string
+      target_abi:
+        description: Jellyfin target ABI written to the test catalog
+        required: false
+        type: string
+        default: "12.0.0.0"
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      prerelease: true
+      changelog: ${{ inputs.changelog || 'Pre-release test build.' }}
+      version: ${{ inputs.version || '' }}
+      suffix: ${{ inputs.suffix || '' }}
+      target_abi: ${{ inputs.target_abi || '12.0.0.0' }}
