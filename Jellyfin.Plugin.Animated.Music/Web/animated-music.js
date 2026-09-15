@@ -31,7 +31,7 @@
         style.id = STYLE_ID;
         style.textContent =
             '.animated-music-host{position:relative;overflow:hidden}' +
-            '.animated-music-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:1}' +
+            '.animated-music-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:2}' +
             '.nowPlayingImage .animated-music-media,.nowPlayingPageImageContainer .animated-music-media{object-fit:contain}' +
             '.animated-music-media.is-visible{opacity:1}';
         document.head.appendChild(style);
@@ -78,7 +78,49 @@
     }
 
     function cardId(card) {
-        return normalizeId(card.getAttribute('data-id'));
+        return card ? normalizeId(card.getAttribute('data-id')) : '';
+    }
+
+    function itemIdFromLocation() {
+        var href = String(window.location.href || '');
+        var match = href.match(/[?&#]id=([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})/i);
+        return match ? normalizeId(match[1]) : '';
+    }
+
+    function idFromNode(el) {
+        if (!el) {
+            return '';
+        }
+        var id = cardId(el.closest && el.closest('.card'));
+        if (id) {
+            return id;
+        }
+        var url = el.getAttribute('data-src') || el.getAttribute('src') || '';
+        if (!url && el.style) {
+            url = el.style.backgroundImage || '';
+        }
+        id = idFromUrl(url);
+        if (id) {
+            return id;
+        }
+        try {
+            id = idFromUrl(getComputedStyle(el).backgroundImage);
+        } catch (e) {
+            id = '';
+        }
+        return id || itemIdFromLocation();
+    }
+
+    function pick(obj, names) {
+        if (!obj) {
+            return undefined;
+        }
+        for (var i = 0; i < names.length; i++) {
+            if (obj[names[i]] !== undefined && obj[names[i]] !== null) {
+                return obj[names[i]];
+            }
+        }
+        return undefined;
     }
 
     function isMusicType(type) {
@@ -194,6 +236,9 @@
             media = null;
         }
         if (media) {
+            if (media.parentNode === host && host.lastElementChild !== media) {
+                host.appendChild(media);
+            }
             return media;
         }
         media = createMedia(cover);
@@ -308,13 +353,6 @@
         host.setAttribute(MARK, nextId);
         host._amCover = cover;
 
-        if (id === nextId && getMedia(host) && mode === 'hero') {
-            if (reduceMotion) {
-                pauseMedia(host, false);
-            }
-            return;
-        }
-
         if (mode === 'hero') {
             if (reduceMotion) {
                 var still = attachMedia(host, cover);
@@ -374,7 +412,7 @@
             return;
         }
         var api = apiClient();
-        if (!api || !api.ajax) {
+        if (!api) {
             return;
         }
         var batch = queued.splice(0, MAX_IDS);
@@ -382,14 +420,23 @@
             delete queuedSet[batch[i]];
         }
         var url = api.getUrl('AnimatedMusic/Lookup', { ids: batch.join(',') });
-        api.ajax({ url: url, type: 'GET', dataType: 'json' }).then(function (data) {
-            var items = (data && data.items) || [];
+        lookup(api, url).then(function (data) {
+            var items = pick(data, ['items', 'Items']) || [];
             var seen = {};
             for (var n = 0; n < items.length; n++) {
                 var item = items[n];
-                var id = normalizeId(item.itemId);
+                var id = normalizeId(pick(item, ['itemId', 'ItemId']));
+                var cover = pick(item, ['cover', 'Cover']) || { available: false };
+                if (cover.available === undefined && cover.Available !== undefined) {
+                    cover = {
+                        available: cover.Available,
+                        url: pick(cover, ['url', 'Url']),
+                        previewUrl: pick(cover, ['previewUrl', 'PreviewUrl']),
+                        mimeType: pick(cover, ['mimeType', 'MimeType'])
+                    };
+                }
                 seen[id] = true;
-                cache[id] = item.cover || { available: false };
+                cache[id] = cover;
                 finishWaiters(id);
             }
             for (var b = 0; b < batch.length; b++) {
@@ -406,6 +453,22 @@
         if (queued.length) {
             flushTimer = setTimeout(flushLookups, LOOKUP_DELAY);
         }
+    }
+
+    function lookup(api, url) {
+        if (api.ajax) {
+            return api.ajax({ url: url, type: 'GET', dataType: 'json' });
+        }
+        var headers = { Accept: 'application/json' };
+        if (api.accessToken) {
+            headers['X-Emby-Token'] = api.accessToken();
+        }
+        return fetch(url, { headers: headers, credentials: 'same-origin' }).then(function (res) {
+            if (!res.ok) {
+                throw new Error('lookup failed');
+            }
+            return res.json();
+        });
     }
 
     function finishWaiters(id) {
@@ -469,12 +532,21 @@
         if (!page) {
             return;
         }
-        var image = page.querySelector('.detailImageContainer .cardImageContainer');
-        var card = image && image.closest('.card');
-        if (!image || !card || !isMusicType(card.getAttribute('data-type'))) {
+        var image = page.querySelector('.detailImageContainer .cardImageContainer')
+            || page.querySelector('.detailImageContainer img');
+        if (!image) {
             return;
         }
-        requestCover(cardId(card), image, 'hero');
+        var card = image.closest && image.closest('.card');
+        var type = (card && card.getAttribute('data-type')) || page.getAttribute('data-type') || '';
+        if (type && !isMusicType(type)) {
+            return;
+        }
+        var id = idFromNode(image);
+        if (!id) {
+            return;
+        }
+        requestCover(id, image, 'hero');
     }
 
     function scanNowPlaying() {
