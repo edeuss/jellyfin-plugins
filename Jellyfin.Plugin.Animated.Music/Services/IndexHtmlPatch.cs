@@ -12,14 +12,25 @@ namespace Jellyfin.Plugin.Animated.Music.Services
             "<script[^>]*plugin=[\"']Animated Music[\"'][^>]*>\\s*</script>\\s*",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public static string Apply(string html, string scriptTag)
+        public static bool LooksLikeIndex(string? html)
         {
-            var stripped = Remove(html);
-            if (string.IsNullOrEmpty(stripped))
+            if (string.IsNullOrEmpty(html))
             {
-                return stripped;
+                return false;
             }
 
+            return html.Contains("<html", StringComparison.OrdinalIgnoreCase)
+                && html.Contains("</html", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string Apply(string html, string scriptTag)
+        {
+            if (!LooksLikeIndex(html))
+            {
+                return html ?? string.Empty;
+            }
+
+            var stripped = Remove(html);
             var index = stripped.IndexOf("</body>", StringComparison.OrdinalIgnoreCase);
             if (index < 0)
             {

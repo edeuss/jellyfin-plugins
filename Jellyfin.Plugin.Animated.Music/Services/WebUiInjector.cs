@@ -31,7 +31,13 @@ namespace Jellyfin.Plugin.Animated.Music.Services
         {
             _applicationPaths = applicationPaths;
             _logger = logger;
+            WebPath = applicationPaths.WebPath;
         }
+
+        /// <summary>
+        /// Gets the jellyfin-web directory.
+        /// </summary>
+        public static string? WebPath { get; private set; }
 
         /// <summary>
         /// Gets how the script was injected.
@@ -207,9 +213,18 @@ namespace Jellyfin.Plugin.Animated.Music.Services
             try
             {
                 var original = File.ReadAllText(indexPath);
+                if (!IndexHtmlPatch.LooksLikeIndex(original))
+                {
+                    return false;
+                }
+
                 var updated = strip
                     ? IndexHtmlPatch.Remove(original)
                     : IndexHtmlPatch.Apply(original, ScriptTag());
+                if (!IndexHtmlPatch.LooksLikeIndex(updated))
+                {
+                    return false;
+                }
                 if (string.Equals(original, updated, StringComparison.Ordinal))
                 {
                     return !strip;
