@@ -30,8 +30,8 @@
         var style = document.createElement('style');
         style.id = STYLE_ID;
         style.textContent =
-            '.animated-music-host{position:relative;overflow:hidden}' +
-            '.animated-music-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:2}' +
+            '.animated-music-host{overflow:hidden}' +
+            '.animated-music-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;z-index:6}' +
             '.nowPlayingImage .animated-music-media,.nowPlayingPageImageContainer .animated-music-media{object-fit:contain}' +
             '.animated-music-media.is-visible{opacity:1}';
         document.head.appendChild(style);
@@ -41,8 +41,28 @@
         return window.ApiClient;
     }
 
+    function accessToken() {
+        var api = apiClient();
+        if (!api) {
+            return '';
+        }
+        var token = api.accessToken;
+        if (typeof token === 'function') {
+            try {
+                return token.call(api) || '';
+            } catch (e) {
+                return '';
+            }
+        }
+        if (typeof token === 'string') {
+            return token;
+        }
+        var info = api._serverInfo || api.serverInfo;
+        return (info && (info.AccessToken || info.accessToken)) || '';
+    }
+
     function waitForApi(cb) {
-        if (apiClient() && apiClient().accessToken && apiClient().accessToken()) {
+        if (apiClient() && accessToken()) {
             cb();
             return;
         }
@@ -55,7 +75,7 @@
             return path;
         }
         var rel = path.charAt(0) === '/' ? path.substring(1) : path;
-        return api.getUrl(rel, { ApiKey: api.accessToken() });
+        return api.getUrl(rel, { ApiKey: accessToken() });
     }
 
     function normalizeId(id) {
@@ -73,7 +93,12 @@
         if (!value) {
             return '';
         }
-        var match = String(value).match(/Items\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})/i);
+        var text = String(value);
+        var match = text.match(/Items\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})/i);
+        if (match) {
+            return normalizeId(match[1]);
+        }
+        match = text.match(/[?&](?:itemId|ItemId|id)=([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})/i);
         return match ? normalizeId(match[1]) : '';
     }
 
@@ -96,8 +121,8 @@
             return id;
         }
         var url = el.getAttribute('data-src') || el.getAttribute('src') || '';
-        if (!url && el.style) {
-            url = el.style.backgroundImage || '';
+        if (el.style && el.style.backgroundImage) {
+            url += ' ' + el.style.backgroundImage;
         }
         id = idFromUrl(url);
         if (id) {
@@ -141,10 +166,23 @@
         if (!el) {
             return null;
         }
+        if (el.closest) {
+            var scalable = el.closest('.detailImageContainer .cardScalable');
+            if (scalable) {
+                return scalable;
+            }
+        }
         if (el.tagName === 'IMG') {
             return el.parentElement || el;
         }
         return el;
+    }
+
+    function isVisible(el) {
+        if (!el || !el.getClientRects) {
+            return false;
+        }
+        return el.getClientRects().length > 0;
     }
 
     function ensureHost(el) {
@@ -207,7 +245,10 @@
             el.loop = true;
             el.playsInline = true;
             el.setAttribute('playsinline', '');
-            el.preload = 'none';
+            el.setAttribute('muted', '');
+            el.setAttribute('autoplay', '');
+            el.autoplay = true;
+            el.preload = 'auto';
             if (cover.previewUrl) {
                 el.poster = withToken(cover.previewUrl);
             }
@@ -461,7 +502,9 @@
         }
         var headers = { Accept: 'application/json' };
         if (api.accessToken) {
-            headers['X-Emby-Token'] = api.accessToken();
+            var token = accessToken();
+            headers['X-Emby-Token'] = token;
+            headers['Authorization'] = 'MediaBrowser Token="' + token + '"';
         }
         return fetch(url, { headers: headers, credentials: 'same-origin' }).then(function (res) {
             if (!res.ok) {
@@ -528,25 +571,30 @@
     }
 
     function scanDetail() {
-        var page = document.querySelector('.itemDetailPage');
-        if (!page) {
-            return;
+        var pages = document.querySelectorAll('.itemDetailPage');
+        for (var p = 0; p < pages.length; p++) {
+            var page = pages[p];
+            if (page.classList.contains('hide')) {
+                continue;
+            }
+            var images = page.querySelectorAll('.detailImageContainer .cardImageContainer, .detailImageContainer img');
+            for (var i = 0; i < images.length; i++) {
+                var image = images[i];
+                if (!isVisible(image)) {
+                    continue;
+                }
+                var card = image.closest && image.closest('.card');
+                var type = (card && card.getAttribute('data-type')) || page.getAttribute('data-type') || '';
+                if (type && !isMusicType(type)) {
+                    continue;
+                }
+                var id = idFromNode(image) || itemIdFromLocation();
+                if (!id) {
+                    continue;
+                }
+                requestCover(id, image, 'hero');
+            }
         }
-        var image = page.querySelector('.detailImageContainer .cardImageContainer')
-            || page.querySelector('.detailImageContainer img');
-        if (!image) {
-            return;
-        }
-        var card = image.closest && image.closest('.card');
-        var type = (card && card.getAttribute('data-type')) || page.getAttribute('data-type') || '';
-        if (type && !isMusicType(type)) {
-            return;
-        }
-        var id = idFromNode(image);
-        if (!id) {
-            return;
-        }
-        requestCover(id, image, 'hero');
     }
 
     function scanNowPlaying() {

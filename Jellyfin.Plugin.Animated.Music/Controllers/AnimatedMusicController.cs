@@ -73,11 +73,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
         public ActionResult<AnimatedLookupResponseDto> Lookup([FromQuery] string? ids)
         {
             var userId = GetRequestUserId();
-            if (userId == Guid.Empty)
-            {
-                return Unauthorized();
-            }
-
             var results = new List<AnimatedLookupItemDto>();
             foreach (var id in ParseIds(ids, 50))
             {
@@ -108,7 +103,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 return NotFound();
             }
 
-            Response.Headers.CacheControl = "public, max-age=3600";
+            Response.Headers.CacheControl = "no-store";
             return File(bytes, "application/javascript");
         }
 
@@ -434,7 +429,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
         private AnimatedLookupItemDto LookupCover(Guid id, Guid userId)
         {
-            var album = _libraryManager.GetItemById<MusicAlbum>(id, userId);
+            var album = GetAlbumOrNull(id, userId);
             if (album is not null)
             {
                 var cover = _locator.FindAlbumAsset(album, AnimatedAssetKind.Cover);
@@ -446,7 +441,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
                 };
             }
 
-            var track = _libraryManager.GetItemById<Audio>(id, userId);
+            var track = GetTrackOrNull(id, userId);
             if (track is not null)
             {
                 var cover = _locator.FindTrackAsset(track, AnimatedAssetKind.Cover);
@@ -517,24 +512,40 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
         private MusicAlbum? GetAlbumOrNull(Guid albumId)
         {
-            var userId = GetRequestUserId();
-            if (userId == Guid.Empty)
+            return GetAlbumOrNull(albumId, GetRequestUserId());
+        }
+
+        private MusicAlbum? GetAlbumOrNull(Guid albumId, Guid userId)
+        {
+            if (userId != Guid.Empty)
             {
-                return null;
+                var album = _libraryManager.GetItemById<MusicAlbum>(albumId, userId);
+                if (album is not null)
+                {
+                    return album;
+                }
             }
 
-            return _libraryManager.GetItemById<MusicAlbum>(albumId, userId);
+            return _libraryManager.GetItemById(albumId) as MusicAlbum;
         }
 
         private Audio? GetTrackOrNull(Guid trackId)
         {
-            var userId = GetRequestUserId();
-            if (userId == Guid.Empty)
+            return GetTrackOrNull(trackId, GetRequestUserId());
+        }
+
+        private Audio? GetTrackOrNull(Guid trackId, Guid userId)
+        {
+            if (userId != Guid.Empty)
             {
-                return null;
+                var track = _libraryManager.GetItemById<Audio>(trackId, userId);
+                if (track is not null)
+                {
+                    return track;
+                }
             }
 
-            return _libraryManager.GetItemById<Audio>(trackId, userId);
+            return _libraryManager.GetItemById(trackId) as Audio;
         }
 
         private Guid GetRequestUserId()
@@ -557,7 +568,8 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
 
         private static bool IsUserIdClaim(string type)
         {
-            return type == "UserId"
+            return type == "http://jellyfin.org/claims/userid"
+                || type == "UserId"
                 || type == "sub"
                 || type == ClaimTypes.NameIdentifier;
         }
