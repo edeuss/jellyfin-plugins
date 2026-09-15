@@ -1,218 +1,210 @@
 # Jellyfin.Plugin.Animated.Music
 
-A Jellyfin plugin that adds support for animated covers and vertical video backgrounds for music albums through an REST API for clients to use.
+A Jellyfin plugin that adds animated covers and vertical video backgrounds for music albums through a REST API.
+
+Requires **Jellyfin 12.0 or 12.1**.
 
 ## Features
 
-- **Animated Covers**: Support for animated GIF, MP4, WebM, MOV, and AVI files as album covers (square album cover video, replaces the image album cover)
-- **Animated Cover Previews**: Support for static image previews of the first frame of animated covers (JPG, PNG, WebP)
-- **Tall Animated Covers**: Support for tall aspect ratio animated covers for special layouts
-- **Tall Animated Cover Previews**: Support for static image previews of the first frame of tall animated covers (JPG, PNG, WebP)
-- **Vertical Backgrounds**: Support for vertical video backgrounds for music albums or tracks (a vertical background is a 9:16 aspect ratio video designed to fill the entire screen with playback controls overlaid at the bottom)
+- **Animated covers**: GIF, MP4, WebM, MOV, and AVI as square album covers
+- **Tall animated covers**: the same formats at a tall aspect ratio
+- **Vertical backgrounds**: 9:16 videos for full-screen playback with controls overlaid
+- **Previews**: first-frame JPEG generated from the video (optional sidecar images still work if you already have them)
+- **Track-specific files**: covers and backgrounds named after a track file, with album-level fallback
 
 ## Installation
 
-### Building from Source
+### Building from source
 
 1. Clone this repository
-2. Build the project using .NET 8.0:
+2. Build with the .NET 10 SDK:
 
    ```bash
    sh build.sh
    ```
 
-3. Copy the built .zip to your Jellyfin plugins directory
+3. Copy the built `.zip` to your Jellyfin plugins directory
 4. Restart Jellyfin Server
 
-### From Catalog page
+### From the catalog
 
-1. Navigate to the dashboard plugins catalog page.
-2. Click on the gear icon.
-3. Click on the + (plus) icon.
-4. Add this Repository URL
+1. Open the dashboard plugins catalog page
+2. Click the gear icon, then the plus icon
+3. Add this repository URL:
 
    ```text
    https://raw.githubusercontent.com/edeuss/jellyfin-plugins/refs/heads/main/manifest.json
    ```
 
-5. Navigate back to the catalog page.
-6. Find "Animated Music"
-7. Install
+4. Find **Animated Music** and install
 
-## Usage
+## File layout
 
-### File Structure
-
-Place your animated files in your music album folders with the following naming convention:
+Place animated files in the album folder. Preview images are optional.
 
 ```txt
 Music/
 ├── Artist Name/
-│ ├── Album Name/
-│ │ ├── 01 - Track 1.mp3
-│ │ ├── 02 - Track 2.mp3
-│ │ ├── cover-animated.gif # Animated cover
-│ │ ├── cover-animated-preview.jpg # Preview image (first frame)
-│ │ ├── cover-animated-tall.mp4 # Tall animated cover
-│ │ ├── cover-animated-tall-preview.png # Tall preview image (first frame)
-│ │ ├── vertical-background.mp4 # Album vertical background
-│ │ ├── vertical-background-01 - Track 1.mp4 # Track-specific vertical background
-│ │ ├── vertical-background-02 - Track 2.webm # Track-specific vertical background
-│ │ └── cover.jpg
+│ └── Album Name/
+│     ├── 01 - Track 1.mp3
+│     ├── 02 - Track 2.mp3
+│     ├── cover-animated.mp4
+│     ├── cover-animated-tall.webm
+│     ├── vertical-background.mp4
+│     ├── vertical-background-01 - Track 1.mp4
+│     └── cover.jpg
 ```
 
-### Supported File Formats
+### Names
 
-- **Animated Covers**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
-- **Animated Cover Previews**: `.jpg`, `.jpeg`, `.png`, `.webp`
-- **Tall Animated Covers**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
-- **Tall Animated Cover Previews**: `.jpg`, `.jpeg`, `.png`, `.webp`
-- **Vertical Backgrounds**: `.gif`, `.mp4`, `.webm`, `.mov`, `.avi`
+| File | Role |
+|------|------|
+| `cover-animated.*` | Square animated cover |
+| `cover-animated-tall.*` | Tall animated cover |
+| `vertical-background.*` | Album vertical background |
+| `cover-animated-{trackStem}.*` | Track-specific cover |
+| `cover-animated-tall-{trackStem}.*` | Track-specific tall cover |
+| `vertical-background-{trackStem}.*` | Track-specific vertical background |
+| `cover-animated-preview.*` | Optional still (otherwise extracted from the video) |
+| `cover-animated-tall-preview.*` | Optional tall still |
+| `vertical-background-preview.*` | Optional background still |
+
+`{trackStem}` is the track file name without extension, for example `01 - Track 1`.
+
+Preferred video extensions, in order: `.mp4`, `.webm`, `.gif`, `.mov`, `.avi`.
+
+Optional preview stills: `.jpg`, `.jpeg`, `.png`, `.webp`.
 
 ## How to find videos
 
 ### Animated covers
 
-Apple Music provides animated album covers that can be downloaded using the [Animated Music tool](https://deuss.dev/tools/animated-music).
+Apple Music animated album covers can be downloaded with the [Animated Music tool](https://deuss.dev/tools/animated-music).
 
 ### Vertical backgrounds
 
-Spotify offers artists vertical background videos called "Canvas" that play behind the music. You can download these videos using a Spotify track link and [canvasdownloader.com](https://www.canvasdownloader.com).
+Spotify Canvas videos can be downloaded from a track link via [canvasdownloader.com](https://www.canvasdownloader.com).
 
-## API Endpoints
+## API
 
-The plugin provides REST API endpoints to access animated files programmatically:
+All routes require a logged-in Jellyfin user. Album and track IDs are GUIDs. Media responses support HTTP Range and HEAD. Missing items or files return 404.
 
-### Get Album Animated Cover
-
-```text
-GET /AnimatedMusic/Album/{albumId}/AnimatedCover
-```
-
-Returns the animated cover file for the specified album.
-
-### Get Album Animated Cover Preview
+### Status
 
 ```text
-GET /AnimatedMusic/Album/{albumId}/AnimatedCoverPreview
-```
-
-Returns the animated cover preview image for the specified album.
-
-### Get Album Tall Animated Cover
-
-```text
-GET /AnimatedMusic/Album/{albumId}/AnimatedCoverTall
-```
-
-Returns the tall animated cover file for the specified album.
-
-### Get Album Tall Animated Cover Preview
-
-```text
-GET /AnimatedMusic/Album/{albumId}/AnimatedCoverTallPreview
-```
-
-Returns the tall animated cover file for the specified album.
-
-### Get Album Vertical Background
-
-```text
-GET /AnimatedMusic/Album/{albumId}/VerticalBackground
-```
-
-Returns the vertical background file for the specified album.
-
-### Get Album Animated Info
-
-```text
-GET /AnimatedMusic/Album/{albumId}/Info
+GET /AnimatedMusic
 ```
 
 ```json
 {
-  "AlbumId": "d5861930-8da6-499c-b7dd-235c60703f64",
-  "HasAnimatedCover": true,
-  "HasAnimatedCoverPreview": true,
-  "HasAnimatedCoverTall": true,
-  "HasVerticalBackground": true,
-  "AnimatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
-  "AnimatedCoverPreviewUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCoverPreview",
-  "AnimatedCoverTallUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCoverTall",
-  "AnimatedCoverTallPreviewUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCoverTallPreview",
-  "VerticalBackgroundUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground"
+  "pluginName": "Animated Music",
+  "version": "2.0.0",
+  "status": "Available"
 }
 ```
 
-### Get Track Animated Cover
+### Album info
 
 ```text
-GET /AnimatedMusic/Track/{trackId}/AnimatedCover
-```
-
-Returns the animated cover file for the specified tracks album cover.
-
-### Get Track Animated Cover Preview
-
-```text
-GET /AnimatedMusic/Track/{trackId}/AnimatedCoverPreview
-```
-
-Returns the animated cover preview image for the specified track.
-
-### Get Track Tall Animated Cover
-
-```text
-GET /AnimatedMusic/Track/{trackId}/AnimatedCoverTall
-```
-
-Returns the tall animated cover file for the specified track.
-
-### Get Track Tall Animated Cover Preview
-
-```text
-GET /AnimatedMusic/Track/{trackId}/AnimatedCoverTallPreview
-```
-
-Returns the tall animated cover file for the specified track.
-
-### Get Track Vertical Background
-
-```text
-GET /AnimatedMusic/Track/{trackId}/VerticalBackground
-```
-
-Returns the vertical background file for the specified track.
-
-### Get Track Animated Info
-
-```text
-GET /AnimatedMusic/Track/{trackId}/Info
+GET /AnimatedMusic/Albums/{albumId}
 ```
 
 ```json
 {
-  "TrackId": "d5861930-8da6-499c-b7dd-235c60703f64",
-  "HasAnimatedCover": true,
-  "HasAnimatedCoverPreview": true,
-  "HasAnimatedCoverTall": true,
-  "HasVerticalBackground": true,
-  "HasTrackSpecificVerticalBackground": true,
-  "AnimatedCoverUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCover",
-  "AnimatedCoverPreviewUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCoverPreview",
-  "AnimatedCoverTallUrl": "/AnimatedMusic/Album/d5861930-8da6-499c-b7dd-235c60703f64/AnimatedCoverTall",
-  "VerticalBackgroundUrl": "/AnimatedMusic/Track/{trackId}/VerticalBackground"
+  "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
+  "cover": {
+    "available": true,
+    "url": "/AnimatedMusic/Albums/d5861930-8da6-499c-b7dd-235c60703f64/Cover",
+    "previewUrl": "/AnimatedMusic/Albums/d5861930-8da6-499c-b7dd-235c60703f64/Cover/Preview",
+    "mimeType": "video/mp4",
+    "fileName": "cover-animated.mp4",
+    "fileSize": 1234567
+  },
+  "tallCover": {
+    "available": false,
+    "url": null,
+    "previewUrl": null,
+    "mimeType": null,
+    "fileName": null,
+    "fileSize": null
+  },
+  "verticalBackground": {
+    "available": true,
+    "url": "/AnimatedMusic/Albums/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground",
+    "previewUrl": "/AnimatedMusic/Albums/d5861930-8da6-499c-b7dd-235c60703f64/VerticalBackground/Preview",
+    "mimeType": "video/webm",
+    "fileName": "vertical-background.webm",
+    "fileSize": 999
+  }
 }
 ```
 
-### Notes
+`previewUrl` is set whenever the video exists. The plugin extracts the first frame with FFmpeg and caches it. A sidecar still is used when present.
 
-- Files are served with appropriate MIME types (image/gif, video/mp4, etc.)
-- Album/Track IDs must be valid GUIDs
-- Returns 404 if files are not found
+### Album files
+
+```text
+GET /AnimatedMusic/Albums/{albumId}/Cover
+GET /AnimatedMusic/Albums/{albumId}/Cover/Preview
+GET /AnimatedMusic/Albums/{albumId}/TallCover
+GET /AnimatedMusic/Albums/{albumId}/TallCover/Preview
+GET /AnimatedMusic/Albums/{albumId}/VerticalBackground
+GET /AnimatedMusic/Albums/{albumId}/VerticalBackground/Preview
+```
+
+### Track info
+
+```text
+GET /AnimatedMusic/Tracks/{trackId}
+```
+
+Track-specific files are preferred; otherwise the album file is used.
+
+```json
+{
+  "trackId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "albumId": "d5861930-8da6-499c-b7dd-235c60703f64",
+  "trackFileName": "01 - Track 1",
+  "cover": {
+    "available": true,
+    "url": "/AnimatedMusic/Tracks/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/Cover",
+    "previewUrl": "/AnimatedMusic/Tracks/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/Cover/Preview",
+    "mimeType": "video/mp4",
+    "fileName": "cover-animated.mp4",
+    "fileSize": 1234567,
+    "trackSpecific": false
+  },
+  "tallCover": {
+    "available": false,
+    "url": null,
+    "previewUrl": null,
+    "mimeType": null,
+    "fileName": null,
+    "fileSize": null
+  },
+  "verticalBackground": {
+    "available": true,
+    "url": "/AnimatedMusic/Tracks/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/VerticalBackground",
+    "previewUrl": "/AnimatedMusic/Tracks/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/VerticalBackground/Preview",
+    "mimeType": "video/mp4",
+    "fileName": "vertical-background-01 - Track 1.mp4",
+    "fileSize": 888,
+    "trackSpecific": true
+  }
+}
+```
+
+### Track files
+
+```text
+GET /AnimatedMusic/Tracks/{trackId}/Cover
+GET /AnimatedMusic/Tracks/{trackId}/Cover/Preview
+GET /AnimatedMusic/Tracks/{trackId}/TallCover
+GET /AnimatedMusic/Tracks/{trackId}/TallCover/Preview
+GET /AnimatedMusic/Tracks/{trackId}/VerticalBackground
+GET /AnimatedMusic/Tracks/{trackId}/VerticalBackground/Preview
+```
 
 ## Troubleshooting
 
-### Logs
-
-Check the Jellyfin server logs for plugin-related messages. Look for entries containing "Animated Music" or "Jellyfin.Plugin.Animated.Music".
+Check the Jellyfin server logs for messages from `Animated Music` or `Jellyfin.Plugin.Animated.Music`. Preview extraction needs FFmpeg configured on the server.

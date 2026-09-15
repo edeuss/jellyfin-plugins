@@ -1,679 +1,495 @@
 using System;
 using System.IO;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using Jellyfin.Plugin.Animated.Music.Models;
+using Jellyfin.Plugin.Animated.Music.Services;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace Jellyfin.Plugin.Animated.Music.Controllers
 {
     /// <summary>
-    /// Controller for serving animated music files.
+    /// REST API for animated music covers and vertical backgrounds.
     /// </summary>
     [ApiController]
+    [Authorize]
     [Route("AnimatedMusic")]
     public class AnimatedMusicController : ControllerBase
     {
-        private readonly ILogger<AnimatedMusicController> _logger;
         private readonly ILibraryManager _libraryManager;
-
-        // Hardcoded configuration values
-        private static readonly string[] SupportedAnimatedFormats = { ".gif", ".mp4", ".webm", ".mov", ".avi" };
-        private static readonly string[] SupportedImageFormats = { ".jpg", ".jpeg", ".png", ".webp" };
+        private readonly AnimatedAssetLocator _locator;
+        private readonly PreviewFrameExtractor _previewExtractor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AnimatedMusicController"/> class.
         /// </summary>
-        /// <param name="logger">The logger.</param>
         /// <param name="libraryManager">The library manager.</param>
-        public AnimatedMusicController(ILogger<AnimatedMusicController> logger, ILibraryManager libraryManager)
+        /// <param name="locator">The asset locator.</param>
+        /// <param name="previewExtractor">The preview extractor.</param>
+        public AnimatedMusicController(
+            ILibraryManager libraryManager,
+            AnimatedAssetLocator locator,
+            PreviewFrameExtractor previewExtractor)
         {
-            _logger = logger;
             _libraryManager = libraryManager;
+            _locator = locator;
+            _previewExtractor = previewExtractor;
         }
 
         /// <summary>
-        /// Gets the animated cover for a music album.
+        /// Returns plugin status.
+        /// </summary>
+        /// <returns>Plugin status.</returns>
+        [HttpGet]
+        [ProducesResponseType(typeof(PluginStatusDto), StatusCodes.Status200OK)]
+        public ActionResult<PluginStatusDto> GetStatus()
+        {
+            return new PluginStatusDto
+            {
+                PluginName = "Animated Music",
+                Version = Plugin.Instance.Version.ToString(),
+                Status = "Available"
+            };
+        }
+
+        /// <summary>
+        /// Gets animated assets for an album.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
-        /// <returns>The animated cover file.</returns>
-        [HttpGet("Album/{albumId}/AnimatedCover")]
-        public IActionResult GetAnimatedCover(string albumId)
+        /// <returns>Album asset info.</returns>
+        [HttpGet("Albums/{albumId:guid}")]
+        [ProducesResponseType(typeof(AlbumAnimatedInfoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<AlbumAnimatedInfoDto> GetAlbum(Guid albumId)
         {
-            return ExecuteWithErrorHandling(albumId, "animated cover for album", () =>
+            var album = GetAlbumOrNull(albumId);
+            if (album is null)
             {
-                var album = GetValidatedAlbum(albumId);
-                var filePath = FindAnimatedFile(album.ContainingFolderPath, "cover-animated");
-                return ServeAnimatedFile(filePath, $"animated cover for album {albumId}");
-            });
+                return NotFound();
+            }
+
+            var cover = _locator.FindAlbumAsset(album, AnimatedAssetKind.Cover);
+            var tall = _locator.FindAlbumAsset(album, AnimatedAssetKind.TallCover);
+            var background = _locator.FindAlbumAsset(album, AnimatedAssetKind.VerticalBackground);
+            var prefix = $"/AnimatedMusic/Albums/{albumId}";
+
+            return new AlbumAnimatedInfoDto
+            {
+                AlbumId = albumId,
+                Cover = ToDto(cover, $"{prefix}/Cover", $"{prefix}/Cover/Preview"),
+                TallCover = ToDto(tall, $"{prefix}/TallCover", $"{prefix}/TallCover/Preview"),
+                VerticalBackground = ToDto(background, $"{prefix}/VerticalBackground", $"{prefix}/VerticalBackground/Preview")
+            };
         }
 
         /// <summary>
-        /// Gets the animated cover preview (first frame) for a music album.
+        /// Gets the album animated cover.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
-        /// <returns>The animated cover preview image.</returns>
-        [HttpGet("Album/{albumId}/AnimatedCoverPreview")]
-        public IActionResult GetAnimatedCoverPreview(string albumId)
+        /// <returns>The cover file.</returns>
+        [HttpGet("Albums/{albumId:guid}/Cover")]
+        [HttpHead("Albums/{albumId:guid}/Cover")]
+        public IActionResult GetAlbumCover(Guid albumId)
         {
-            return ExecuteWithErrorHandling(albumId, "animated cover preview for album", () =>
-            {
-                var album = GetValidatedAlbum(albumId);
-                var filePath = FindImageFile(album.ContainingFolderPath, "cover-animated-preview");
-                return ServeImageFile(filePath, $"animated cover preview for album {albumId}");
-            });
+            return ServeAlbumAsset(albumId, AnimatedAssetKind.Cover);
         }
 
         /// <summary>
-        /// Gets the tall animated cover for a music album.
+        /// Gets a first-frame preview of the album animated cover.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
-        /// <returns>The tall animated cover file.</returns>
-        [HttpGet("Album/{albumId}/AnimatedCoverTall")]
-        public IActionResult GetAnimatedCoverTall(string albumId)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Albums/{albumId:guid}/Cover/Preview")]
+        [HttpHead("Albums/{albumId:guid}/Cover/Preview")]
+        public Task<IActionResult> GetAlbumCoverPreview(Guid albumId, CancellationToken cancellationToken)
         {
-            return ExecuteWithErrorHandling(albumId, "tall animated cover for album", () =>
-            {
-                var album = GetValidatedAlbum(albumId);
-                var filePath = FindAnimatedFile(album.ContainingFolderPath, "cover-animated-tall");
-                return ServeAnimatedFile(filePath, $"tall animated cover for album {albumId}");
-            });
+            return ServeAlbumPreview(albumId, AnimatedAssetKind.Cover, cancellationToken);
         }
 
         /// <summary>
-        /// Gets the tall animated cover preview (first frame) for a music album.
+        /// Gets the album tall animated cover.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
-        /// <returns>The tall animated cover preview image.</returns>
-        [HttpGet("Album/{albumId}/AnimatedCoverTallPreview")]
-        public IActionResult GetAnimatedCoverTallPreview(string albumId)
+        /// <returns>The tall cover file.</returns>
+        [HttpGet("Albums/{albumId:guid}/TallCover")]
+        [HttpHead("Albums/{albumId:guid}/TallCover")]
+        public IActionResult GetAlbumTallCover(Guid albumId)
         {
-            return ExecuteWithErrorHandling(albumId, "tall animated cover preview for album", () =>
-            {
-                var album = GetValidatedAlbum(albumId);
-                var filePath = FindImageFile(album.ContainingFolderPath, "cover-animated-tall-preview");
-                return ServeImageFile(filePath, $"tall animated cover preview for album {albumId}");
-            });
+            return ServeAlbumAsset(albumId, AnimatedAssetKind.TallCover);
         }
 
         /// <summary>
-        /// Gets the vertical background for a music album.
+        /// Gets a first-frame preview of the album tall animated cover.
         /// </summary>
         /// <param name="albumId">The album ID.</param>
-        /// <returns>The vertical background file.</returns>
-        [HttpGet("Album/{albumId}/VerticalBackground")]
-        public IActionResult GetVerticalBackground(string albumId)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Albums/{albumId:guid}/TallCover/Preview")]
+        [HttpHead("Albums/{albumId:guid}/TallCover/Preview")]
+        public Task<IActionResult> GetAlbumTallCoverPreview(Guid albumId, CancellationToken cancellationToken)
         {
-            return ExecuteWithErrorHandling(albumId, "vertical background for album", () =>
-            {
-                var album = GetValidatedAlbum(albumId);
-                var filePath = FindAnimatedFile(album.ContainingFolderPath, "vertical-background");
-                return ServeAnimatedFile(filePath, $"vertical background for album {albumId}");
-            });
+            return ServeAlbumPreview(albumId, AnimatedAssetKind.TallCover, cancellationToken);
         }
 
         /// <summary>
-        /// Gets the vertical background for a music track.
+        /// Gets the album vertical background.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <returns>The background file.</returns>
+        [HttpGet("Albums/{albumId:guid}/VerticalBackground")]
+        [HttpHead("Albums/{albumId:guid}/VerticalBackground")]
+        public IActionResult GetAlbumVerticalBackground(Guid albumId)
+        {
+            return ServeAlbumAsset(albumId, AnimatedAssetKind.VerticalBackground);
+        }
+
+        /// <summary>
+        /// Gets a first-frame preview of the album vertical background.
+        /// </summary>
+        /// <param name="albumId">The album ID.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Albums/{albumId:guid}/VerticalBackground/Preview")]
+        [HttpHead("Albums/{albumId:guid}/VerticalBackground/Preview")]
+        public Task<IActionResult> GetAlbumVerticalBackgroundPreview(Guid albumId, CancellationToken cancellationToken)
+        {
+            return ServeAlbumPreview(albumId, AnimatedAssetKind.VerticalBackground, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets animated assets for a track.
         /// </summary>
         /// <param name="trackId">The track ID.</param>
-        /// <returns>The vertical background file.</returns>
-        [HttpGet("Track/{trackId}/VerticalBackground")]
-        public IActionResult GetTrackVerticalBackground(string trackId)
+        /// <returns>Track asset info.</returns>
+        [HttpGet("Tracks/{trackId:guid}")]
+        [ProducesResponseType(typeof(TrackAnimatedInfoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<TrackAnimatedInfoDto> GetTrack(Guid trackId)
         {
-            return ExecuteWithErrorHandling(trackId, "vertical background for track", () =>
+            var track = GetTrackOrNull(trackId);
+            if (track is null)
             {
-                var track = GetValidatedTrack(trackId);
-                var filePath = FindTrackVerticalBackground(track);
-                return ServeAnimatedFile(filePath, $"track vertical background for track {trackId}");
-            });
+                return NotFound();
+            }
+
+            var album = track.FindParent<MusicAlbum>();
+            var cover = _locator.FindTrackAsset(track, AnimatedAssetKind.Cover);
+            var tall = _locator.FindTrackAsset(track, AnimatedAssetKind.TallCover);
+            var background = _locator.FindTrackAsset(track, AnimatedAssetKind.VerticalBackground);
+            var prefix = $"/AnimatedMusic/Tracks/{trackId}";
+
+            return new TrackAnimatedInfoDto
+            {
+                TrackId = trackId,
+                AlbumId = album?.Id,
+                TrackFileName = Path.GetFileNameWithoutExtension(track.Path),
+                Cover = ToDto(cover, $"{prefix}/Cover", $"{prefix}/Cover/Preview", includeTrackSpecific: true),
+                TallCover = ToDto(tall, $"{prefix}/TallCover", $"{prefix}/TallCover/Preview", includeTrackSpecific: true),
+                VerticalBackground = ToDto(background, $"{prefix}/VerticalBackground", $"{prefix}/VerticalBackground/Preview", includeTrackSpecific: true)
+            };
         }
 
         /// <summary>
-        /// Gets the animated cover for the album containing the specified track.
+        /// Gets the track animated cover.
         /// </summary>
         /// <param name="trackId">The track ID.</param>
-        /// <returns>The animated cover file for the track's album.</returns>
-        [HttpGet("Track/{trackId}/AnimatedCover")]
-        public IActionResult GetTrackAnimatedCover(string trackId)
+        /// <returns>The cover file.</returns>
+        [HttpGet("Tracks/{trackId:guid}/Cover")]
+        [HttpHead("Tracks/{trackId:guid}/Cover")]
+        public IActionResult GetTrackCover(Guid trackId)
         {
-            return ExecuteWithErrorHandling(trackId, "animated cover for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-                var filePath = FindTrackAnimatedCover(track);
-                return ServeAnimatedFile(filePath, $"animated cover for track {trackId}");
-            });
+            return ServeTrackAsset(trackId, AnimatedAssetKind.Cover);
         }
 
         /// <summary>
-        /// Gets the animated cover preview for the album containing the specified track.
+        /// Gets a first-frame preview of the track animated cover.
         /// </summary>
         /// <param name="trackId">The track ID.</param>
-        /// <returns>The animated cover preview image for the track's album.</returns>
-        [HttpGet("Track/{trackId}/AnimatedCoverPreview")]
-        public IActionResult GetTrackAnimatedCoverPreview(string trackId)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Tracks/{trackId:guid}/Cover/Preview")]
+        [HttpHead("Tracks/{trackId:guid}/Cover/Preview")]
+        public Task<IActionResult> GetTrackCoverPreview(Guid trackId, CancellationToken cancellationToken)
         {
-            return ExecuteWithErrorHandling(trackId, "animated cover preview for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-                var filePath = FindTrackAnimatedCoverPreview(track);
-                return ServeImageFile(filePath, $"animated cover preview for track {trackId}");
-            });
+            return ServeTrackPreview(trackId, AnimatedAssetKind.Cover, cancellationToken);
         }
 
         /// <summary>
-        /// Gets the tall animated cover for the album containing the specified track.
+        /// Gets the track tall animated cover.
         /// </summary>
         /// <param name="trackId">The track ID.</param>
-        /// <returns>The tall animated cover file for the track's album.</returns>
-        [HttpGet("Track/{trackId}/AnimatedCoverTall")]
-        public IActionResult GetTrackAnimatedCoverTall(string trackId)
+        /// <returns>The tall cover file.</returns>
+        [HttpGet("Tracks/{trackId:guid}/TallCover")]
+        [HttpHead("Tracks/{trackId:guid}/TallCover")]
+        public IActionResult GetTrackTallCover(Guid trackId)
         {
-            return ExecuteWithErrorHandling(trackId, "tall animated cover for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-                var filePath = FindTrackAnimatedCoverTall(track);
-                return ServeAnimatedFile(filePath, $"tall animated cover for track {trackId}");
-            });
+            return ServeTrackAsset(trackId, AnimatedAssetKind.TallCover);
         }
 
         /// <summary>
-        /// Gets the tall animated cover preview for the album containing the specified track.
+        /// Gets a first-frame preview of the track tall animated cover.
         /// </summary>
         /// <param name="trackId">The track ID.</param>
-        /// <returns>The tall animated cover preview image for the track's album.</returns>
-        [HttpGet("Track/{trackId}/AnimatedCoverTallPreview")]
-        public IActionResult GetTrackAnimatedCoverTallPreview(string trackId)
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Tracks/{trackId:guid}/TallCover/Preview")]
+        [HttpHead("Tracks/{trackId:guid}/TallCover/Preview")]
+        public Task<IActionResult> GetTrackTallCoverPreview(Guid trackId, CancellationToken cancellationToken)
         {
-            return ExecuteWithErrorHandling(trackId, "tall animated cover preview for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-                var filePath = FindTrackAnimatedCoverTallPreview(track);
-                return ServeImageFile(filePath, $"tall animated cover preview for track {trackId}");
-            });
+            return ServeTrackPreview(trackId, AnimatedAssetKind.TallCover, cancellationToken);
         }
 
         /// <summary>
-        /// Gets information about animated files for a music album.
+        /// Gets the track vertical background.
         /// </summary>
-        /// <param name="albumId">The album ID.</param>
-        /// <returns>Information about available animated files.</returns>
-        [HttpGet("Album/{albumId}/Info")]
-        public IActionResult GetAnimatedInfo(string albumId)
+        /// <param name="trackId">The track ID.</param>
+        /// <returns>The background file.</returns>
+        [HttpGet("Tracks/{trackId:guid}/VerticalBackground")]
+        [HttpHead("Tracks/{trackId:guid}/VerticalBackground")]
+        public IActionResult GetTrackVerticalBackground(Guid trackId)
         {
-            return ExecuteWithErrorHandling(albumId, "animated info for album", () =>
+            return ServeTrackAsset(trackId, AnimatedAssetKind.VerticalBackground);
+        }
+
+        /// <summary>
+        /// Gets a first-frame preview of the track vertical background.
+        /// </summary>
+        /// <param name="trackId">The track ID.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The preview image.</returns>
+        [HttpGet("Tracks/{trackId:guid}/VerticalBackground/Preview")]
+        [HttpHead("Tracks/{trackId:guid}/VerticalBackground/Preview")]
+        public Task<IActionResult> GetTrackVerticalBackgroundPreview(Guid trackId, CancellationToken cancellationToken)
+        {
+            return ServeTrackPreview(trackId, AnimatedAssetKind.VerticalBackground, cancellationToken);
+        }
+
+        private IActionResult ServeAlbumAsset(Guid albumId, AnimatedAssetKind kind)
+        {
+            var album = GetAlbumOrNull(albumId);
+            if (album is null)
             {
-                var album = GetValidatedAlbum(albumId);
-                var albumPath = album.ContainingFolderPath;
+                return NotFound();
+            }
 
-                var animatedCoverPath = FindAnimatedFile(albumPath, "cover-animated");
-                var animatedCoverPreviewPath = FindImageFile(albumPath, "cover-animated-preview");
-                var animatedCoverTallPath = FindAnimatedFile(albumPath, "cover-animated-tall");
-                var animatedCoverTallPreviewPath = FindImageFile(albumPath, "cover-animated-tall-preview");
-                var verticalBackgroundPath = FindAnimatedFile(albumPath, "vertical-background");
+            var asset = _locator.FindAlbumAsset(album, kind);
+            return ServeAsset(asset, album.ContainingFolderPath);
+        }
 
-                var info = new
+        private async Task<IActionResult> ServeAlbumPreview(Guid albumId, AnimatedAssetKind kind, CancellationToken cancellationToken)
+        {
+            var album = GetAlbumOrNull(albumId);
+            if (album is null)
+            {
+                return NotFound();
+            }
+
+            var asset = _locator.FindAlbumAsset(album, kind);
+            return await ServePreview(asset, cancellationToken, album.ContainingFolderPath).ConfigureAwait(false);
+        }
+
+        private IActionResult ServeTrackAsset(Guid trackId, AnimatedAssetKind kind)
+        {
+            var track = GetTrackOrNull(trackId);
+            if (track is null)
+            {
+                return NotFound();
+            }
+
+            var asset = _locator.FindTrackAsset(track, kind);
+            return ServeAsset(asset, TrackRoots(track));
+        }
+
+        private async Task<IActionResult> ServeTrackPreview(Guid trackId, AnimatedAssetKind kind, CancellationToken cancellationToken)
+        {
+            var track = GetTrackOrNull(trackId);
+            if (track is null)
+            {
+                return NotFound();
+            }
+
+            var asset = _locator.FindTrackAsset(track, kind);
+            return await ServePreview(asset, cancellationToken, TrackRoots(track)).ConfigureAwait(false);
+        }
+
+        private IActionResult ServeAsset(LocatedAsset? asset, params string?[] roots)
+        {
+            if (asset is null || !IsPathUnderRoots(asset.Path, roots))
+            {
+                return NotFound();
+            }
+
+            return ServeFile(asset.Path, asset.MimeType);
+        }
+
+        private async Task<IActionResult> ServePreview(LocatedAsset? asset, CancellationToken cancellationToken, params string?[] roots)
+        {
+            if (asset is null || !IsPathUnderRoots(asset.Path, roots))
+            {
+                return NotFound();
+            }
+
+            var sidecar = asset.SidecarPreviewPath;
+            if (!string.IsNullOrEmpty(sidecar) && IsPathUnderRoots(sidecar, roots) && System.IO.File.Exists(sidecar))
+            {
+                return ServeFile(sidecar, MimeTypes.GetMimeType(sidecar, "image/jpeg"));
+            }
+
+            var previewPath = await _previewExtractor.GetOrCreateAsync(asset.Path, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(previewPath))
+            {
+                return NotFound();
+            }
+
+            return ServeFile(previewPath, "image/jpeg");
+        }
+
+        private IActionResult ServeFile(string path, string contentType)
+        {
+            var fileInfo = new FileInfo(path);
+            if (!fileInfo.Exists)
+            {
+                return NotFound();
+            }
+
+            var etag = new EntityTagHeaderValue($"\"{fileInfo.LastWriteTimeUtc.Ticks:x}-{fileInfo.Length:x}\"");
+            if (Request.Headers.IfNoneMatch.Count > 0)
+            {
+                foreach (var candidate in Request.GetTypedHeaders().IfNoneMatch)
                 {
-                    AlbumId = albumId,
-                    HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
-                    HasAnimatedCoverPreview = !string.IsNullOrEmpty(animatedCoverPreviewPath),
-                    HasAnimatedCoverTall = !string.IsNullOrEmpty(animatedCoverTallPath),
-                    HasAnimatedCoverTallPreview = !string.IsNullOrEmpty(animatedCoverTallPreviewPath),
-                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
-                    AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCover" : null,
-                    AnimatedCoverPreviewUrl = !string.IsNullOrEmpty(animatedCoverPreviewPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverPreview" : null,
-                    AnimatedCoverTallUrl = !string.IsNullOrEmpty(animatedCoverTallPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverTall" : null,
-                    AnimatedCoverTallPreviewUrl = !string.IsNullOrEmpty(animatedCoverTallPreviewPath) ? $"/AnimatedMusic/Album/{albumId}/AnimatedCoverTallPreview" : null,
-                    VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Album/{albumId}/VerticalBackground" : null
-                };
-
-                return Ok(info);
-            });
-        }
-
-        /// <summary>
-        /// Gets information about animated files for a music track.
-        /// </summary>
-        /// <param name="trackId">The track ID.</param>
-        /// <returns>Information about available animated files.</returns>
-        [HttpGet("Track/{trackId}/Info")]
-        public IActionResult GetTrackAnimatedInfo(string trackId)
-        {
-            return ExecuteWithErrorHandling(trackId, "animated info for track", () =>
-            {
-                var track = GetValidatedTrack(trackId);
-                var folderPath = Path.GetDirectoryName(track.Path);
-                var fileName = Path.GetFileName(track.Path);
-
-                if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-                {
-                    return NotFound("Track path not found");
+                    if (!candidate.Equals(EntityTagHeaderValue.Any) && candidate.Equals(etag))
+                    {
+                        return StatusCode(StatusCodes.Status304NotModified);
+                    }
                 }
+            }
 
-                var album = track.AlbumEntity;
-                var albumPath = album?.ContainingFolderPath;
-                var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-                var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
+            Response.Headers.CacheControl = "private, max-age=86400";
+            Response.GetTypedHeaders().LastModified = fileInfo.LastWriteTimeUtc;
+            Response.GetTypedHeaders().ETag = etag;
 
-                var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
-                var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
-                    ? FindAnimatedFile(albumPath, "vertical-background")
-                    : null;
-
-                var verticalBackgroundPath = trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
-                var animatedCoverPath = !string.IsNullOrEmpty(albumPath) ? FindAnimatedFile(albumPath, "cover-animated") : null;
-                var animatedCoverPreviewPath = !string.IsNullOrEmpty(albumPath) ? FindImageFile(albumPath, "cover-animated-preview") : null;
-                var animatedCoverTallPath = !string.IsNullOrEmpty(albumPath) ? FindAnimatedFile(albumPath, "cover-animated-tall") : null;
-                var animatedCoverTallPreviewPath = !string.IsNullOrEmpty(albumPath) ? FindImageFile(albumPath, "cover-animated-tall-preview") : null;
-
-                var info = new
-                {
-                    TrackId = trackId,
-                    TrackFileName = trackFileName,
-                    HasAnimatedCover = !string.IsNullOrEmpty(animatedCoverPath),
-                    HasAnimatedCoverPreview = !string.IsNullOrEmpty(animatedCoverPreviewPath),
-                    HasAnimatedCoverTall = !string.IsNullOrEmpty(animatedCoverTallPath),
-                    HasAnimatedCoverTallPreview = !string.IsNullOrEmpty(animatedCoverTallPreviewPath),
-                    HasVerticalBackground = !string.IsNullOrEmpty(verticalBackgroundPath),
-                    HasTrackSpecificVerticalBackground = !string.IsNullOrEmpty(trackVerticalBackgroundPath),
-                    AnimatedCoverUrl = !string.IsNullOrEmpty(animatedCoverPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCover" : null,
-                    AnimatedCoverPreviewUrl = !string.IsNullOrEmpty(animatedCoverPreviewPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverPreview" : null,
-                    AnimatedCoverTallUrl = !string.IsNullOrEmpty(animatedCoverTallPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverTall" : null,
-                    AnimatedCoverTallPreviewUrl = !string.IsNullOrEmpty(animatedCoverTallPreviewPath) ? $"/AnimatedMusic/Track/{trackId}/AnimatedCoverTallPreview" : null,
-                    VerticalBackgroundUrl = !string.IsNullOrEmpty(verticalBackgroundPath) ? $"/AnimatedMusic/Track/{trackId}/VerticalBackground" : null
-                };
-
-                return Ok(info);
-            });
+            return PhysicalFile(fileInfo.FullName, contentType, enableRangeProcessing: true);
         }
 
-        /// <summary>
-        /// Tests if the Animated Music plugin is installed and available.
-        /// </summary>
-        /// <returns>A simple response indicating the plugin is available.</returns>
-        [HttpGet("Ping")]
-        public IActionResult TestPlugin()
+        private MusicAlbum? GetAlbumOrNull(Guid albumId)
         {
-            try
-            {
-                var response = new
-                {
-                    PluginName = "Animated Music",
-                    Version = Plugin.Instance.Version.ToString(),
-                    Status = "Available",
-                    Message = "Animated Music plugin is installed and running"
-                };
-
-                _logger.LogDebug("Plugin availability test requested");
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during plugin availability test");
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        // Private helper methods to reduce duplication
-
-        private IActionResult ExecuteWithErrorHandling(string id, string operation, Func<IActionResult> action)
-        {
-            try
-            {
-                return action();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error serving {Operation} for ID {Id}", operation, id);
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        private MusicAlbum GetValidatedAlbum(string albumId)
-        {
-            if (!Guid.TryParse(albumId, out var guid))
-            {
-                throw new ArgumentException("Invalid album ID");
-            }
-
-            var item = _libraryManager.GetItemById(guid);
-            if (item is not MusicAlbum album)
-            {
-                throw new ArgumentException("Album not found");
-            }
-
-            return album;
-        }
-
-        private Audio GetValidatedTrack(string trackId)
-        {
-            if (!Guid.TryParse(trackId, out var guid))
-            {
-                _logger.LogWarning("Invalid track ID format: {TrackId}", trackId);
-                throw new ArgumentException("Invalid track ID");
-            }
-
-            var item = _libraryManager.GetItemById(guid);
-            if (item == null)
-            {
-                _logger.LogWarning("Track not found in library: {TrackId}", trackId);
-                throw new ArgumentException("Track not found");
-            }
-
-            if (item is not Audio track)
-            {
-                _logger.LogWarning("Item found but is not an Audio track. Item type: {ItemType}, Item name: {ItemName}",
-                    item.GetType().Name, item.Name);
-                throw new ArgumentException("Track not found");
-            }
-
-            return track;
-        }
-
-        private string FindTrackAnimatedCover(Audio track)
-        {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
-
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException("Track path not found");
-            }
-
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var trackAnimatedCoverPattern = $"cover-animated-{trackFileName}";
-
-            // Check for track-specific animated cover first
-            var trackAnimatedCoverPath = FindAnimatedFile(folderPath, trackAnimatedCoverPattern);
-
-            // Fall back to album-level animated cover if no track-specific one found
-            var albumAnimatedCoverPath = string.IsNullOrEmpty(trackAnimatedCoverPath) && !string.IsNullOrEmpty(albumPath)
-                ? FindAnimatedFile(albumPath, "cover-animated")
-                : null;
-
-            return trackAnimatedCoverPath ?? albumAnimatedCoverPath;
-        }
-
-        private string FindTrackAnimatedCoverPreview(Audio track)
-        {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
-
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException("Track path not found");
-            }
-
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var trackAnimatedCoverPreviewPattern = $"cover-animated-preview-{trackFileName}";
-
-            // Check for track-specific animated cover preview first
-            var trackAnimatedCoverPreviewPath = FindImageFile(folderPath, trackAnimatedCoverPreviewPattern);
-
-            // Fall back to album-level animated cover preview if no track-specific one found
-            var albumAnimatedCoverPreviewPath = string.IsNullOrEmpty(trackAnimatedCoverPreviewPath) && !string.IsNullOrEmpty(albumPath)
-                ? FindImageFile(albumPath, "cover-animated-preview")
-                : null;
-
-            return trackAnimatedCoverPreviewPath ?? albumAnimatedCoverPreviewPath;
-        }
-
-        private string FindTrackAnimatedCoverTall(Audio track)
-        {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
-
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException("Track path not found");
-            }
-
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var trackAnimatedCoverTallPattern = $"cover-animated-tall-{trackFileName}";
-
-            // Check for track-specific tall animated cover first
-            var trackAnimatedCoverTallPath = FindAnimatedFile(folderPath, trackAnimatedCoverTallPattern);
-
-            // Fall back to album-level tall animated cover if no track-specific one found
-            var albumAnimatedCoverTallPath = string.IsNullOrEmpty(trackAnimatedCoverTallPath) && !string.IsNullOrEmpty(albumPath)
-                ? FindAnimatedFile(albumPath, "cover-animated-tall")
-                : null;
-
-            return trackAnimatedCoverTallPath ?? albumAnimatedCoverTallPath;
-        }
-
-        private string FindTrackAnimatedCoverTallPreview(Audio track)
-        {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
-
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException("Track path not found");
-            }
-
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var trackAnimatedCoverTallPreviewPattern = $"cover-animated-tall-preview-{trackFileName}";
-
-            // Check for track-specific tall animated cover preview first
-            var trackAnimatedCoverTallPreviewPath = FindImageFile(folderPath, trackAnimatedCoverTallPreviewPattern);
-
-            // Fall back to album-level tall animated cover preview if no track-specific one found
-            var albumAnimatedCoverTallPreviewPath = string.IsNullOrEmpty(trackAnimatedCoverTallPreviewPath) && !string.IsNullOrEmpty(albumPath)
-                ? FindImageFile(albumPath, "cover-animated-tall-preview")
-                : null;
-
-            return trackAnimatedCoverTallPreviewPath ?? albumAnimatedCoverTallPreviewPath;
-        }
-
-        private string FindTrackVerticalBackground(Audio track)
-        {
-            var folderPath = Path.GetDirectoryName(track.Path);
-            var fileName = Path.GetFileName(track.Path);
-
-            if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(fileName))
-            {
-                throw new ArgumentException("Track path not found");
-            }
-
-            var album = track.AlbumEntity;
-            var albumPath = album?.ContainingFolderPath;
-            var trackFileName = Path.GetFileNameWithoutExtension(fileName);
-            var verticalBackgroundPattern = $"vertical-background-{trackFileName}";
-
-            var trackVerticalBackgroundPath = FindAnimatedFile(folderPath, verticalBackgroundPattern);
-            var albumVerticalBackgroundPath = string.IsNullOrEmpty(trackVerticalBackgroundPath) && !string.IsNullOrEmpty(albumPath)
-                ? FindAnimatedFile(albumPath, "vertical-background")
-                : null;
-
-            return trackVerticalBackgroundPath ?? albumVerticalBackgroundPath;
-        }
-
-        private IActionResult ServeAnimatedFile(string filePath, string logContext)
-        {
-            if (string.IsNullOrEmpty(filePath))
-            {
-                return NotFound("Animated file not found");
-            }
-
-            var fileInfo = new FileInfo(filePath);
-            if (!fileInfo.Exists)
-            {
-                return NotFound("Animated file not found");
-            }
-
-            var contentType = GetContentType(fileInfo.Extension);
-            var stream = System.IO.File.OpenRead(filePath);
-
-            _logger.LogDebug("Serving {LogContext}: {FilePath}", logContext, filePath);
-
-            return File(stream, contentType);
-        }
-
-        private IActionResult ServeImageFile(string filePath, string logContext)
-        {
-            if (string.IsNullOrEmpty(filePath))
-            {
-                return NotFound("Image file not found");
-            }
-
-            var fileInfo = new FileInfo(filePath);
-            if (!fileInfo.Exists)
-            {
-                return NotFound("Image file not found");
-            }
-
-            var contentType = GetImageContentType(fileInfo.Extension);
-            var stream = System.IO.File.OpenRead(filePath);
-
-            _logger.LogDebug("Serving {LogContext}: {FilePath}", logContext, filePath);
-
-            return File(stream, contentType);
-        }
-
-        private string FindAnimatedFile(string albumPath, string fileNamePattern)
-        {
-            if (string.IsNullOrEmpty(albumPath) || !Directory.Exists(albumPath))
+            var userId = GetRequestUserId();
+            if (userId == Guid.Empty)
             {
                 return null;
             }
 
-            try
-            {
-                foreach (var file in Directory.GetFiles(albumPath))
-                {
-                    try
-                    {
-                        var fileInfo = new FileInfo(file);
-                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
-
-                        if (nameWithoutExtension.Equals(fileNamePattern, StringComparison.OrdinalIgnoreCase) &&
-                            IsAnimatedFile(fileInfo.Name))
-                        {
-                            return file;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Error checking file: {FilePath}", file);
-                        continue;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error scanning directory: {AlbumPath}", albumPath);
-            }
-
-            return null;
+            return _libraryManager.GetItemById<MusicAlbum>(albumId, userId);
         }
 
-        private string FindImageFile(string albumPath, string fileNamePattern)
+        private Audio? GetTrackOrNull(Guid trackId)
         {
-            if (string.IsNullOrEmpty(albumPath) || !Directory.Exists(albumPath))
+            var userId = GetRequestUserId();
+            if (userId == Guid.Empty)
             {
                 return null;
             }
 
-            try
-            {
-                foreach (var file in Directory.GetFiles(albumPath))
-                {
-                    try
-                    {
-                        var fileInfo = new FileInfo(file);
-                        var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
+            return _libraryManager.GetItemById<Audio>(trackId, userId);
+        }
 
-                        if (nameWithoutExtension.Equals(fileNamePattern, StringComparison.OrdinalIgnoreCase) &&
-                            IsImageFile(fileInfo.Name))
-                        {
-                            return file;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Error checking file: {FilePath}", file);
-                        continue;
-                    }
+        private Guid GetRequestUserId()
+        {
+            foreach (var claim in User.Claims)
+            {
+                if (!IsUserIdClaim(claim.Type))
+                {
+                    continue;
+                }
+
+                if (Guid.TryParse(claim.Value, out var id) && id != Guid.Empty)
+                {
+                    return id;
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error scanning directory: {AlbumPath}", albumPath);
-            }
 
-            return null;
+            return Guid.Empty;
         }
 
-        private bool IsAnimatedFile(string fileName)
+        private static bool IsUserIdClaim(string type)
         {
-            if (string.IsNullOrEmpty(fileName))
-            {
-                return false;
-            }
-
-            try
-            {
-                var extension = Path.GetExtension(fileName).ToLowerInvariant();
-                return Array.Exists(SupportedAnimatedFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error checking file extension for: {FileName}", fileName);
-                return false;
-            }
+            return type == "UserId"
+                || type == "sub"
+                || type == ClaimTypes.NameIdentifier;
         }
 
-        private bool IsImageFile(string fileName)
+        private static AnimatedAssetDto ToDto(LocatedAsset? asset, string url, string previewUrl, bool includeTrackSpecific = false)
         {
-            if (string.IsNullOrEmpty(fileName))
+            if (asset is null)
             {
-                return false;
+                return new AnimatedAssetDto { Available = false };
             }
 
-            try
+            return new AnimatedAssetDto
             {
-                var extension = Path.GetExtension(fileName).ToLowerInvariant();
-                return Array.Exists(SupportedImageFormats, f => f.Equals(extension, StringComparison.OrdinalIgnoreCase));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Error checking file extension for: {FileName}", fileName);
-                return false;
-            }
-        }
-
-        private string GetContentType(string extension)
-        {
-            return extension.ToLowerInvariant() switch
-            {
-                ".gif" => "image/gif",
-                ".mp4" => "video/mp4",
-                ".webm" => "video/webm",
-                ".mov" => "video/quicktime",
-                ".avi" => "video/x-msvideo",
-                _ => "application/octet-stream"
+                Available = true,
+                Url = url,
+                PreviewUrl = previewUrl,
+                MimeType = asset.MimeType,
+                FileName = asset.FileName,
+                FileSize = asset.FileSize,
+                TrackSpecific = includeTrackSpecific ? asset.TrackSpecific : null
             };
         }
 
-        private string GetImageContentType(string extension)
+        private static string?[] TrackRoots(Audio track)
         {
-            return extension.ToLowerInvariant() switch
+            var trackDir = Path.GetDirectoryName(track.Path);
+            var albumDir = track.FindParent<MusicAlbum>()?.ContainingFolderPath;
+            return new[] { trackDir, albumDir };
+        }
+
+        private static bool IsPathUnderRoots(string filePath, params string?[] roots)
+        {
+            string full;
+            try
             {
-                ".jpg" => "image/jpeg",
-                ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                _ => "application/octet-stream"
-            };
+                full = Path.GetFullPath(filePath);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            foreach (var root in roots)
+            {
+                if (string.IsNullOrEmpty(root))
+                {
+                    continue;
+                }
+
+                string fullRoot;
+                try
+                {
+                    fullRoot = Path.GetFullPath(root);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                var prefix = fullRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar;
+                if (full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -19,9 +19,8 @@ dotnet clean --configuration Release
 rm -rf build/
 rm -f Jellyfin.Plugin.Animated.Music_*.zip
 
-# Check if .NET 8.0 is installed
 if ! command -v dotnet &> /dev/null; then
-    echo "Error: .NET 8.0 SDK is not installed. Please install it first."
+    echo "Error: .NET SDK is not installed. Please install .NET 10 SDK first."
     exit 1
 fi
 
@@ -39,7 +38,7 @@ mkdir -p build
 
 # Copy built files to output directory (excluding macOS metadata)
 echo "Copying built files..."
-cp -r Jellyfin.Plugin.Animated.Music/bin/Release/net8.0/* build/
+cp -r Jellyfin.Plugin.Animated.Music/bin/Release/net10.0/* build/
 
 # Remove any macOS metadata files that might have been copied
 echo "Cleaning macOS metadata files..."
@@ -65,4 +64,4 @@ echo "To install the plugin:"
 echo "1. Copy the contents of the 'build' directory to your Jellyfin plugins folder"
 echo "   OR extract $ZIP_NAME to your Jellyfin plugins folder"
 echo "2. Restart Jellyfin Server"
-echo "3. The plugin will appear in the Plugins section of your Jellyfin dashboard" 
+echo "3. The plugin will appear in the Plugins section of your Jellyfin dashboard"
