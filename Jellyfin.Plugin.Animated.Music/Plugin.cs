@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -9,7 +10,7 @@ namespace Jellyfin.Plugin.Animated.Music
     /// <summary>
     /// Main plugin class for Jellyfin.Plugin.Animated.Music.
     /// </summary>
-    public class Plugin : BasePlugin<PluginConfiguration>
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         /// <summary>
         /// Gets the plugin instance.
@@ -35,6 +36,21 @@ namespace Jellyfin.Plugin.Animated.Music
 
         /// <inheritdoc />
         public override string Description => "Adds animated cover and vertical video background support for music albums";
+
+        /// <inheritdoc />
+        public IEnumerable<PluginPageInfo> GetPages()
+        {
+            return
+            [
+                new PluginPageInfo
+                {
+                    Name = "AnimatedMusicConfigurationPage",
+                    DisplayName = "Animated Music",
+                    EnableInMainMenu = false,
+                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+                }
+            ];
+        }
     }
 
     /// <summary>
@@ -42,5 +58,9 @@ namespace Jellyfin.Plugin.Animated.Music
     /// </summary>
     public class PluginConfiguration : BasePluginConfiguration
     {
+        /// <summary>
+        /// Gets or sets whether Jellyfin Web shows animated covers.
+        /// </summary>
+        public bool EnableWebUi { get; set; } = true;
     }
 }

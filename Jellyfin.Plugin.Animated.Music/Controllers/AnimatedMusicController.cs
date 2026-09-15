@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using System.Threading;
@@ -55,8 +56,60 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             {
                 PluginName = "Animated Music",
                 Version = Plugin.Instance.Version.ToString(),
-                Status = "Available"
+                Status = "Available",
+                WebUiEnabled = WebUiInjector.IsEnabled(),
+                InjectionStatus = WebUiInjector.InjectionStatus
             };
+        }
+
+        /// <summary>
+        /// Looks up animated covers by album or track ID.
+        /// </summary>
+        /// <param name="ids">Comma-separated item IDs (max 50).</param>
+        /// <returns>Cover info for each ID.</returns>
+        [HttpGet("Lookup")]
+        [ProducesResponseType(typeof(AnimatedLookupResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public ActionResult<AnimatedLookupResponseDto> Lookup([FromQuery] string? ids)
+        {
+            var userId = GetRequestUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
+
+            var results = new List<AnimatedLookupItemDto>();
+            foreach (var id in ParseIds(ids, 50))
+            {
+                results.Add(LookupCover(id, userId));
+            }
+
+            return new AnimatedLookupResponseDto { Items = results };
+        }
+
+        /// <summary>
+        /// Returns the Jellyfin Web client script.
+        /// </summary>
+        /// <returns>JavaScript.</returns>
+        [HttpGet("web.js")]
+        [AllowAnonymous]
+        [Produces("application/javascript")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult GetWebScript()
+        {
+            if (!WebUiInjector.IsEnabled())
+            {
+                return Content("/* Animated Music web UI disabled */\n", "application/javascript");
+            }
+
+            var bytes = ReadEmbedded("Web.animated-music.js");
+            if (bytes is null)
+            {
+                return NotFound();
+            }
+
+            Response.Headers.CacheControl = "public, max-age=3600";
+            return File(bytes, "application/javascript");
         }
 
         /// <summary>
@@ -377,6 +430,89 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             Response.GetTypedHeaders().ETag = etag;
 
             return PhysicalFile(fileInfo.FullName, contentType, enableRangeProcessing: true);
+        }
+
+        private AnimatedLookupItemDto LookupCover(Guid id, Guid userId)
+        {
+            var album = _libraryManager.GetItemById<MusicAlbum>(id, userId);
+            if (album is not null)
+            {
+                var cover = _locator.FindAlbumAsset(album, AnimatedAssetKind.Cover);
+                var prefix = $"/AnimatedMusic/Albums/{id}";
+                return new AnimatedLookupItemDto
+                {
+                    ItemId = id,
+                    Cover = ToDto(cover, $"{prefix}/Cover", $"{prefix}/Cover/Preview")
+                };
+            }
+
+            var track = _libraryManager.GetItemById<Audio>(id, userId);
+            if (track is not null)
+            {
+                var cover = _locator.FindTrackAsset(track, AnimatedAssetKind.Cover);
+                var prefix = $"/AnimatedMusic/Tracks/{id}";
+                return new AnimatedLookupItemDto
+                {
+                    ItemId = id,
+                    Cover = ToDto(cover, $"{prefix}/Cover", $"{prefix}/Cover/Preview", includeTrackSpecific: true)
+                };
+            }
+
+            return new AnimatedLookupItemDto
+            {
+                ItemId = id,
+                Cover = new AnimatedAssetDto { Available = false }
+            };
+        }
+
+        private static List<Guid> ParseIds(string? ids, int max)
+        {
+            var result = new List<Guid>();
+            if (string.IsNullOrWhiteSpace(ids))
+            {
+                return result;
+            }
+
+            var seen = new HashSet<Guid>();
+            foreach (var part in ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!Guid.TryParse(part, out var id) || id == Guid.Empty || !seen.Add(id))
+                {
+                    continue;
+                }
+
+                result.Add(id);
+                if (result.Count >= max)
+                {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        private static byte[]? ReadEmbedded(string suffix)
+        {
+            var assembly = typeof(AnimatedMusicController).Assembly;
+            foreach (var name in assembly.GetManifestResourceNames())
+            {
+                if (!name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                using var stream = assembly.GetManifestResourceStream(name);
+                if (stream is null)
+                {
+                    return null;
+                }
+
+                using var memory = new MemoryStream();
+                stream.CopyTo(memory);
+                return memory.ToArray();
+            }
+
+            return null;
         }
 
         private MusicAlbum? GetAlbumOrNull(Guid albumId)
