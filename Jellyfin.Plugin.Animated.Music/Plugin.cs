@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
-using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
 namespace Jellyfin.Plugin.Animated.Music
@@ -10,7 +8,7 @@ namespace Jellyfin.Plugin.Animated.Music
     /// <summary>
     /// Main plugin class for Jellyfin.Plugin.Animated.Music.
     /// </summary>
-    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+    public class Plugin : BasePlugin<PluginConfiguration>
     {
         /// <summary>
         /// Gets the plugin instance.
@@ -35,28 +33,7 @@ namespace Jellyfin.Plugin.Animated.Music
         public override Guid Id => Guid.Parse("d5861930-8da6-499c-b7dd-235c60703f64");
 
         /// <inheritdoc />
-        public override string Description => "Adds animated cover and vertical video background support for music albums";
-
-        /// <inheritdoc />
-        public IEnumerable<PluginPageInfo> GetPages()
-        {
-            var ns = GetType().Namespace;
-            return
-            [
-                new PluginPageInfo
-                {
-                    Name = "AnimatedMusicConfigurationPage",
-                    DisplayName = "Animated Music",
-                    EnableInMainMenu = false,
-                    EmbeddedResourcePath = ns + ".Configuration.configPage.html"
-                },
-                new PluginPageInfo
-                {
-                    Name = "animatedMusicConfig.js",
-                    EmbeddedResourcePath = ns + ".Configuration.config.js"
-                }
-            ];
-        }
+        public override string Description => "REST API for animated album covers and vertical video backgrounds";
     }
 
     /// <summary>
@@ -64,9 +41,5 @@ namespace Jellyfin.Plugin.Animated.Music
     /// </summary>
     public class PluginConfiguration : BasePluginConfiguration
     {
-        /// <summary>
-        /// Gets or sets whether Jellyfin Web shows animated covers.
-        /// </summary>
-        public bool EnableWebUi { get; set; } = true;
     }
 }

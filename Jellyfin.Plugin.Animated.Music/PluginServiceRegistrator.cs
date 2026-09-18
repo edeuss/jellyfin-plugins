@@ -14,7 +14,6 @@ namespace Jellyfin.Plugin.Animated.Music
         {
             serviceCollection.AddSingleton<Services.AnimatedAssetLocator>();
             serviceCollection.AddSingleton<Services.PreviewFrameExtractor>();
-            serviceCollection.AddHostedService<Services.WebUiInjector>();
         }
     }
 }

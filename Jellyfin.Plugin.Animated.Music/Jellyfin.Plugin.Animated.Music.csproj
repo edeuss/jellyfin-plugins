@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <Company>edeuss</Company>
     <Product>Jellyfin Animated Music Plugin</Product>
-    <Description>Adds animated cover and vertical video background support for music albums, including Jellyfin Web.</Description>
+    <Description>REST API for animated album covers and vertical video backgrounds.</Description>
     <Copyright>Copyright (c) edeuss</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/edeuss/jellyfin-plugins</RepositoryUrl>
@@ -22,12 +22,6 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Web\animated-music.js" />
-    <EmbeddedResource Include="Configuration\configPage.html" />
-    <EmbeddedResource Include="Configuration\config.js" />
   </ItemGroup>
 
   <ItemGroup>

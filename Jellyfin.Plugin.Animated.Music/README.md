@@ -1,6 +1,6 @@
 # Jellyfin.Plugin.Animated.Music
 
-A Jellyfin plugin that adds animated covers and vertical video backgrounds for music albums through a REST API. Jellyfin Web can also show square animated covers.
+A Jellyfin plugin that serves animated covers and vertical video backgrounds for music albums through a REST API. Clients implement their own UI.
 
 Requires **Jellyfin 12.0 or 12.1**.
 
@@ -11,7 +11,6 @@ Requires **Jellyfin 12.0 or 12.1**.
 - **Vertical backgrounds**: 9:16 videos for full-screen playback with controls overlaid
 - **Previews**: first-frame JPEG generated from the video (optional sidecar images still work if you already have them)
 - **Track-specific files**: covers and backgrounds named after a track file, with album-level fallback
-- **Jellyfin Web**: album cards play on hover; album page and now playing play muted
 
 ## Installation
 
@@ -38,29 +37,6 @@ Requires **Jellyfin 12.0 or 12.1**.
    ```
 
 4. Find **Animated Music** and install
-
-## Jellyfin Web
-
-Restart the server and hard-refresh the browser after install.
-
-- **Library cards**: still cover until hover or focus
-- **Album page**: muted looping cover
-- **Now playing**: current track cover, then the album file
-- **Reduced motion**: still preview only
-- Hidden tabs pause. Grid videos drop `src` after a few seconds idle
-
-Toggle this on the plugin page. Tall covers and vertical backgrounds are not shown in the web UI.
-
-How the script is loaded:
-
-1. [File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) if installed
-2. [JavaScript Injector](https://github.com/n00bcodr/Jellyfin-JavaScript-Injector) if installed
-3. `jellyfin-web/index.html` on disk, if writable
-4. Otherwise add this before `</body>` in `index.html` and restart:
-
-```html
-<script plugin="Animated Music" src="../AnimatedMusic/web.js"></script>
-```
 
 ## File layout
 
@@ -111,7 +87,7 @@ Spotify Canvas videos can be downloaded from a track link via [canvasdownloader.
 
 ## API
 
-All routes require a logged-in Jellyfin user except `GET /AnimatedMusic/web.js`. Album and track IDs are GUIDs. Media responses support HTTP Range and HEAD. Missing items or files return 404.
+All routes require a logged-in Jellyfin user. Album and track IDs are GUIDs. Media responses support HTTP Range and HEAD. Missing items or files return 404.
 
 ### Status
 
@@ -123,13 +99,9 @@ GET /AnimatedMusic
 {
   "pluginName": "Animated Music",
   "version": "2.0.0",
-  "status": "Available",
-  "webUiEnabled": true,
-  "injectionStatus": "IndexHtml"
+  "status": "Available"
 }
 ```
-
-`injectionStatus` is `FileTransformation`, `JavaScriptInjector`, `IndexHtml`, `Manual`, `Disabled`, or `Pending`.
 
 ### Batch lookup
 
@@ -262,5 +234,3 @@ GET /AnimatedMusic/Tracks/{trackId}/VerticalBackground/Preview
 ## Troubleshooting
 
 Check the Jellyfin server logs for messages from `Animated Music` or `Jellyfin.Plugin.Animated.Music`. Preview extraction needs FFmpeg configured on the server.
-
-If covers never show in the browser, check the plugin page, hard-refresh, and confirm `index.html` is writable. Docker often mounts it read-only. File Transformation skips that write.

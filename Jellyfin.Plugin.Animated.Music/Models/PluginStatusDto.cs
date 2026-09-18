@@ -19,15 +19,5 @@ namespace Jellyfin.Plugin.Animated.Music.Models
         /// Gets a short status string.
         /// </summary>
         public string Status { get; init; } = "Available";
-
-        /// <summary>
-        /// Gets whether the web UI is enabled.
-        /// </summary>
-        public bool WebUiEnabled { get; init; }
-
-        /// <summary>
-        /// Gets how the web script was loaded.
-        /// </summary>
-        public string InjectionStatus { get; init; } = string.Empty;
     }
 }

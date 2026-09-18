@@ -56,9 +56,7 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             {
                 PluginName = "Animated Music",
                 Version = Plugin.Instance.Version.ToString(),
-                Status = "Available",
-                WebUiEnabled = WebUiInjector.IsEnabled(),
-                InjectionStatus = WebUiInjector.InjectionStatus
+                Status = "Available"
             };
         }
 
@@ -80,31 +78,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             }
 
             return new AnimatedLookupResponseDto { Items = results };
-        }
-
-        /// <summary>
-        /// Returns the Jellyfin Web client script.
-        /// </summary>
-        /// <returns>JavaScript.</returns>
-        [HttpGet("web.js")]
-        [AllowAnonymous]
-        [Produces("application/javascript")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult GetWebScript()
-        {
-            if (!WebUiInjector.IsEnabled())
-            {
-                return Content("/* Animated Music web UI disabled */\n", "application/javascript");
-            }
-
-            var bytes = ReadEmbedded("Web.animated-music.js");
-            if (bytes is null)
-            {
-                return NotFound();
-            }
-
-            Response.Headers.CacheControl = "no-store";
-            return File(bytes, "application/javascript");
         }
 
         /// <summary>
@@ -484,30 +457,6 @@ namespace Jellyfin.Plugin.Animated.Music.Controllers
             }
 
             return result;
-        }
-
-        private static byte[]? ReadEmbedded(string suffix)
-        {
-            var assembly = typeof(AnimatedMusicController).Assembly;
-            foreach (var name in assembly.GetManifestResourceNames())
-            {
-                if (!name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                using var stream = assembly.GetManifestResourceStream(name);
-                if (stream is null)
-                {
-                    return null;
-                }
-
-                using var memory = new MemoryStream();
-                stream.CopyTo(memory);
-                return memory.ToArray();
-            }
-
-            return null;
         }
 
         private MusicAlbum? GetAlbumOrNull(Guid albumId)
