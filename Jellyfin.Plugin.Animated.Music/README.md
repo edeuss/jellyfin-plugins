@@ -58,7 +58,7 @@ Music/
 ### Names
 
 | File | Role |
-|------|------|
+| ------ | ------ |
 | `cover-animated.*` | Square animated cover |
 | `cover-animated-tall.*` | Tall animated cover |
 | `vertical-background.*` | Album vertical background |
@@ -79,7 +79,7 @@ Optional preview stills: `.jpg`, `.jpeg`, `.png`, `.webp`.
 
 ### Animated covers
 
-Apple Music animated album covers can be downloaded with the [Animated Music tool](https://deuss.dev/tools/animated-music).
+Apple Music animated album covers can be downloaded with the [Animated Music tool](https://deuss.dev/projects/animated-music).
 
 ### Vertical backgrounds
 
